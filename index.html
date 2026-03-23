@@ -443,7 +443,7 @@ function addLog(containerId,text,type='info'){
 const G={
   scenario:null, hp:100, score:0, time:0,
   innate:{entities:[],particles:[],mucusZones:[],tool:null,threat:80,defense:5,used:new Set(),feverTimer:0,acidTimer:0,inflammTimer:0,waveT:0,dragging:null,complete:false},
-  adaptive:{order:[],step:0,done:false},
+  adaptive:{order:[],step:0,done:false,animating:false},
   memory:{done:false,phase:0,t:0},
   boss:{hp:100,phase:1,t:0,particles:[],tcellActive:false,cooldowns:{},done:false,checkpointDone:false,vaccineStacks:0,entities:[],playerProtein:null,proteinMinigame:false,proteinChoices:[],proteinCorrect:null}
 };
@@ -1147,6 +1147,8 @@ $('btnToAdaptive').onclick=async()=>{
 const aC=$('adaptiveCanvas');
 const aCtx=aC.getContext('2d');
 let adaptiveAnimId=null;
+// Adaptive scene entities for animations
+const adaptiveScene={t:0,particles:[],entities:[],activeAnim:null,animTimer:0,animPhase:0,pathogen:{x:480,y:300,r:22,alive:true},antibodies:[],cytokines:[]};
 
 function initAdaptive(){
   const s=G.scenario;const A=G.adaptive;
@@ -1156,6 +1158,21 @@ function initAdaptive(){
   $('adaptiveResponse').textContent='Build the activation sequence. Choose cells in the correct biological order.';
   $('adaptiveLog').innerHTML='';
   $('btnToMemory').disabled=true;
+
+  // Reset scene
+  adaptiveScene.t=0;adaptiveScene.particles=[];adaptiveScene.entities=[];
+  adaptiveScene.activeAnim=null;adaptiveScene.animTimer=0;adaptiveScene.animPhase=0;
+  adaptiveScene.antibodies=[];adaptiveScene.cytokines=[];
+  adaptiveScene.pathogen={x:480,y:300,r:22,alive:true};
+
+  // Spawn pathogen fragments and free virus in scene
+  for(let i=0;i<8;i++){
+    adaptiveScene.entities.push({type:'virus',x:rng(100,860),y:rng(80,520),vx:rng(-.4,.4),vy:rng(-.4,.4),r:7,alive:true,pulse:rng(0,6.28)});
+  }
+  // Some infected cells
+  for(let i=0;i<3;i++){
+    adaptiveScene.entities.push({type:'infected',x:rng(200,760),y:rng(150,450),vx:0,vy:0,r:20,alive:true,pulse:rng(0,6.28)});
+  }
 
   // build slots
   const slots=$('adaptiveSlots');slots.innerHTML='';
@@ -1183,7 +1200,7 @@ function initAdaptive(){
 }
 
 function chooseAdaptiveCard(id,cardEl){
-  const A=G.adaptive;if(A.done)return;
+  const A=G.adaptive;if(A.done||adaptiveScene.activeAnim)return;// block during animation
   const needed=A.order[A.step];
   if(id===needed){
     const data=ADAPTIVE_CARDS[id];
@@ -1191,16 +1208,16 @@ function chooseAdaptiveCard(id,cardEl){
     slot.style.borderStyle='solid';slot.style.borderColor='rgba(82,245,168,.3)';slot.style.background='rgba(82,245,168,.04)';
     slot.innerHTML=`<h4 style="color:var(--green);">Step ${A.step+1}: ${data.title}</h4><p style="color:var(--dim);">${data.success}</p>`;
     $('adaptiveResponse').textContent=data.success;
-    addLog('adaptiveLog','✓ '+data.title+' activated correctly.','good');
+    addLog('adaptiveLog','✓ '+data.title+' activated correctly. Watch the animation!','good');
     cardEl.classList.add('used');cardEl.style.pointerEvents='none';
-    G.score+=12;A.step++;
-    if(A.step>=A.order.length){
-      A.done=true;
-      $('btnToMemory').disabled=false;
-      $('adaptiveResponse').textContent='Adaptive immune sequence complete! Your body now has specialized targeting. Antibodies are being mass-produced.';
-      addLog('adaptiveLog','ADAPTIVE COMPLETE — specialized immunity assembled.','good');
-      G.score+=25;
-    }
+    G.score+=12;
+
+    // Trigger cell-specific animation
+    adaptiveScene.activeAnim=id;
+    adaptiveScene.animTimer=0;
+    adaptiveScene.animPhase=0;
+
+    // After animation completes (handled in update loop), advance step
   }else{
     const data=ADAPTIVE_CARDS[id];
     $('adaptiveResponse').textContent=data.fail||'Wrong order. The adaptive response is sequence-sensitive — each step depends on the previous one. Think about what activates what.';
@@ -1212,82 +1229,348 @@ function chooseAdaptiveCard(id,cardEl){
   updateHUD();
 }
 
+function advanceAdaptiveStep(){
+  const A=G.adaptive;
+  A.step++;
+  adaptiveScene.activeAnim=null;
+  if(A.step>=A.order.length){
+    A.done=true;
+    $('btnToMemory').disabled=false;
+    $('adaptiveResponse').textContent='Adaptive immune sequence complete! Antibodies are flooding the system. The pathogen is being neutralized.';
+    addLog('adaptiveLog','ADAPTIVE COMPLETE — specialized immunity assembled.','good');
+    G.score+=25;
+  }else{
+    $('adaptiveResponse').textContent='Good. Now choose the next cell in the sequence.';
+  }
+  updateHUD();
+}
+
 function startAdaptiveAnim(){
   if(adaptiveAnimId)cancelAnimationFrame(adaptiveAnimId);
-  let t=0;
   function loop(){
     if(!$('adaptiveScreen').classList.contains('active')){adaptiveAnimId=requestAnimationFrame(loop);return;}
-    t++;
-    const W=aC.width,H=aC.height;
-    aCtx.clearRect(0,0,W,H);
-    const bg=aCtx.createLinearGradient(0,0,0,H);
-    bg.addColorStop(0,'#0a1432');bg.addColorStop(1,'#060a18');
-    aCtx.fillStyle=bg;aCtx.fillRect(0,0,W,H);
-
-    // lymph node visualization
-    aCtx.fillStyle='rgba(82,245,168,.04)';circle(aCtx,W/2,H/2,200,true);
-    aCtx.strokeStyle='rgba(82,245,168,.1)';aCtx.lineWidth=2;circle(aCtx,W/2,H/2,200,false,true);
-
-    // show activated cells
-    const A=G.adaptive;
-    const colors={dendritic:'#ffd76e',helper:'#52f5a8',cytotoxic:'#ff4466',bcell:'#5db8ff'};
-    const positions=[{x:W/2,y:H/2-120},{x:W/2+130,y:H/2},{x:W/2,y:H/2+120},{x:W/2-130,y:H/2}];
-
-    A.order.forEach((id,i)=>{
-      const pos=positions[i];const active=i<A.step;
-      // connection lines
-      if(i>0){
-        const prev=positions[i-1];
-        aCtx.strokeStyle=active?'rgba(82,245,168,.3)':'rgba(255,255,255,.05)';
-        aCtx.lineWidth=active?3:1;aCtx.setLineDash(active?[]:[5,5]);
-        aCtx.beginPath();aCtx.moveTo(prev.x,prev.y);aCtx.lineTo(pos.x,pos.y);aCtx.stroke();
-        aCtx.setLineDash([]);
-      }
-      // cell
-      if(active){
-        aCtx.fillStyle=colors[id]+'22';circle(aCtx,pos.x,pos.y,45+Math.sin(t*.04+i)*4,true);
-        aCtx.fillStyle=colors[id];circle(aCtx,pos.x,pos.y,30,true);
-        aCtx.fillStyle='rgba(255,255,255,.3)';circle(aCtx,pos.x+5,pos.y-5,10,true);
-        // orbiting particles
-        for(let j=0;j<6;j++){
-          const a=t*.03+j*Math.PI/3;
-          aCtx.fillStyle=colors[id]+'88';
-          circle(aCtx,pos.x+Math.cos(a)*50,pos.y+Math.sin(a)*50,3,true);
-        }
-      }else if(i===A.step){
-        // pulsing target
-        aCtx.strokeStyle='rgba(255,255,255,.2)';aCtx.lineWidth=2;
-        circle(aCtx,pos.x,pos.y,35+Math.sin(t*.08)*5,false,true);
-        aCtx.fillStyle='rgba(255,255,255,.05)';circle(aCtx,pos.x,pos.y,30,true);
-        aCtx.fillStyle='rgba(255,255,255,.15)';
-        aCtx.font='11px var(--font-display)';aCtx.textAlign='center';
-        aCtx.fillText('?',pos.x,pos.y+4);
-      }else{
-        aCtx.fillStyle='rgba(255,255,255,.03)';circle(aCtx,pos.x,pos.y,30,true);
-        aCtx.strokeStyle='rgba(255,255,255,.06)';circle(aCtx,pos.x,pos.y,30,false,true);
-      }
-
-      // label
-      aCtx.fillStyle=active?'rgba(255,255,255,.7)':'rgba(255,255,255,.15)';
-      aCtx.font='11px var(--font-display)';aCtx.textAlign='center';
-      aCtx.fillText(ADAPTIVE_CARDS[id].title,pos.x,pos.y+55);
-    });
-
-    // floating antibodies if complete
-    if(A.done){
-      for(let i=0;i<20;i++){
-        const x=(t*.5+i*60)%W;const y=H/2+Math.sin(t*.02+i)*150;
-        aCtx.fillStyle='rgba(93,184,255,.4)';
-        // Y-shape antibody
-        aCtx.beginPath();aCtx.moveTo(x,y);aCtx.lineTo(x,y-10);
-        aCtx.lineTo(x-6,y-16);aCtx.moveTo(x,y-10);aCtx.lineTo(x+6,y-16);
-        aCtx.strokeStyle='rgba(93,184,255,.5)';aCtx.lineWidth=2;aCtx.stroke();
-      }
-    }
-
+    updateAdaptiveScene();
+    drawAdaptiveScene();
     adaptiveAnimId=requestAnimationFrame(loop);
   }
   loop();
+}
+
+function updateAdaptiveScene(){
+  const S=adaptiveScene;const A=G.adaptive;
+  S.t++;
+
+  // Move free virus
+  S.entities.forEach(e=>{
+    if(!e.alive)return;
+    e.pulse+=.05;
+    if(e.type==='virus'){
+      e.x+=e.vx;e.y+=e.vy;
+      if(e.x<60||e.x>900)e.vx*=-1;
+      if(e.y<60||e.y>540)e.vy*=-1;
+    }
+  });
+
+  // Particles
+  S.particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;p.vx*=.97;p.vy*=.97;});
+  S.particles=S.particles.filter(p=>p.life>0);
+
+  // Cytokines float outward
+  S.cytokines.forEach(c=>{c.x+=c.vx;c.y+=c.vy;c.life--;c.r+=.03;});
+  S.cytokines=S.cytokines.filter(c=>c.life>0);
+
+  // Antibodies drift toward virus
+  S.antibodies.forEach(ab=>{
+    const nearest=S.entities.find(e=>e.alive&&e.type==='virus');
+    if(nearest){
+      const dx=nearest.x-ab.x,dy=nearest.y-ab.y,d=Math.max(1,Math.hypot(dx,dy));
+      ab.x+=dx/d*2;ab.y+=dy/d*2;
+      if(d<15){nearest.alive=false;spawnParticles(S.particles,nearest.x,nearest.y,'rgba(93,184,255,.9)',12);ab.attached=true;}
+    }
+    ab.life--;
+  });
+  S.antibodies=S.antibodies.filter(ab=>ab.life>0&&!ab.attached);
+
+  // Handle active animations
+  if(S.activeAnim){
+    S.animTimer++;
+    const at=S.animTimer;
+
+    if(S.activeAnim==='dendritic'){
+      // Phase 0: dendritic cell appears and moves toward pathogen (0-80)
+      // Phase 1: samples antigen, shows fragments (80-180)
+      // Phase 2: travels to lymph node area, presents antigen (180-300)
+      // Phase 3: done
+      if(at===1){
+        S.dendriticCell={x:100,y:500,targetX:S.pathogen.x,targetY:S.pathogen.y,phase:0,fragments:[]};
+      }
+      const dc=S.dendriticCell;
+      if(at<80){
+        dc.x=lerp(100,S.pathogen.x-40,at/80);
+        dc.y=lerp(500,S.pathogen.y,at/80);
+      }else if(at===80){
+        // sample — create antigen fragments
+        for(let i=0;i<5;i++){
+          dc.fragments.push({x:dc.x+rng(-10,10),y:dc.y+rng(-10,10),a:rng(0,6.28)});
+        }
+        spawnParticles(S.particles,S.pathogen.x,S.pathogen.y,'rgba(255,215,110,.8)',15);
+      }else if(at<180){
+        // pulsing while sampling
+        dc.fragments.forEach((f,i)=>{f.a+=.05;f.x=dc.x+Math.cos(f.a+i)*18;f.y=dc.y+Math.sin(f.a+i)*18;});
+      }else if(at<300){
+        // travel to lymph node (top right)
+        const prog=(at-180)/120;
+        dc.x=lerp(S.pathogen.x-40,780,prog);
+        dc.y=lerp(S.pathogen.y,100,prog);
+        dc.fragments.forEach((f,i)=>{f.x=dc.x+Math.cos(f.a+i)*14;f.y=dc.y+Math.sin(f.a+i)*14;});
+      }else if(at>=320){
+        advanceAdaptiveStep();
+      }
+
+    }else if(S.activeAnim==='helper'){
+      // Helper T-cell appears at lymph node, receives signal, releases cytokines
+      if(at===1){
+        S.helperCell={x:780,y:100,activated:false};
+      }
+      const hc=S.helperCell;
+      if(at===40){
+        hc.activated=true;
+        spawnParticles(S.particles,hc.x,hc.y,'rgba(82,245,168,.9)',20);
+      }
+      if(at>50&&at%12===0&&at<200){
+        // Release cytokine signals in all directions
+        for(let i=0;i<4;i++){
+          const a=rng(0,Math.PI*2);
+          S.cytokines.push({x:hc.x,y:hc.y,vx:Math.cos(a)*1.5,vy:Math.sin(a)*1.5,r:3,life:120,color:'rgba(82,245,168,.6)'});
+        }
+      }
+      if(at>60&&at<180){
+        // Helper slowly moves to center, coordinating
+        hc.x=lerp(780,480,Math.min(1,(at-60)/120));
+        hc.y=lerp(100,250,Math.min(1,(at-60)/120));
+      }
+      if(at>=240){
+        advanceAdaptiveStep();
+      }
+
+    }else if(S.activeAnim==='cytotoxic'){
+      // Cytotoxic T-cells seek infected cells, dock, trigger apoptosis
+      if(at===1){
+        S.killerCells=[];
+        for(let i=0;i<4;i++){
+          S.killerCells.push({x:rng(100,300),y:rng(100,200),target:null,phase:'seek',dockTimer:0});
+        }
+      }
+      S.killerCells.forEach(kc=>{
+        if(kc.phase==='seek'){
+          const target=S.entities.find(e=>e.alive&&e.type==='infected'&&!S.killerCells.some(k=>k.target===e));
+          if(target){kc.target=target;kc.phase='approach';}
+        }else if(kc.phase==='approach'&&kc.target){
+          const dx=kc.target.x-kc.x,dy=kc.target.y-kc.y,d=Math.max(1,Math.hypot(dx,dy));
+          kc.x+=dx/d*2.5;kc.y+=dy/d*2.5;
+          if(d<25){kc.phase='dock';kc.dockTimer=0;}
+        }else if(kc.phase==='dock'){
+          kc.dockTimer++;
+          // Docked — injecting granzymes
+          if(kc.dockTimer%8===0)spawnParticles(S.particles,kc.target.x,kc.target.y,'rgba(255,68,102,.6)',3);
+          if(kc.dockTimer>80){
+            // Trigger apoptosis — cell breaks apart
+            kc.target.alive=false;
+            spawnParticles(S.particles,kc.target.x,kc.target.y,'rgba(255,100,130,.9)',25);
+            kc.phase='done';
+          }
+        }
+      });
+      // End when all infected dead or timer
+      const infectedLeft=S.entities.filter(e=>e.alive&&e.type==='infected').length;
+      if((infectedLeft===0&&at>60)||at>=350){
+        advanceAdaptiveStep();
+      }
+
+    }else if(S.activeAnim==='bcell'){
+      // B-cell activates, clones, differentiates into plasma cells, releases antibodies
+      if(at===1){
+        S.bcells=[{x:480,y:450,phase:'grow',timer:0}];
+      }
+      // Growth phase — cell divides
+      if(at===60){
+        // Clonal expansion
+        for(let i=0;i<5;i++){
+          S.bcells.push({x:480+rng(-80,80),y:450+rng(-40,40),phase:'plasma',timer:0});
+        }
+        spawnParticles(S.particles,480,450,'rgba(93,184,255,.9)',20);
+      }
+      // Plasma cells release antibodies
+      if(at>80&&at%10===0&&at<280){
+        S.bcells.forEach(bc=>{
+          if(bc.phase==='plasma'){
+            S.antibodies.push({x:bc.x,y:bc.y,life:200,attached:false});
+          }
+        });
+      }
+      if(at>=320){
+        advanceAdaptiveStep();
+      }
+    }
+  }
+
+  // Kill pathogen when done
+  if(A.done&&S.pathogen.alive){
+    S.pathogen.r-=.15;
+    if(S.pathogen.r<=0){S.pathogen.alive=false;spawnParticles(S.particles,S.pathogen.x,S.pathogen.y,'rgba(255,100,130,.9)',30);}
+  }
+}
+
+function drawAdaptiveScene(){
+  const S=adaptiveScene;const A=G.adaptive;
+  const W=aC.width,H=aC.height,t=S.t;
+  aCtx.clearRect(0,0,W,H);
+  const bg=aCtx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0a1432');bg.addColorStop(1,'#060a18');
+  aCtx.fillStyle=bg;aCtx.fillRect(0,0,W,H);
+
+  // Lymph node area (top right)
+  aCtx.fillStyle='rgba(82,245,168,.03)';circle(aCtx,780,100,80,true);
+  aCtx.strokeStyle='rgba(82,245,168,.08)';aCtx.lineWidth=1;circle(aCtx,780,100,80,false,true);
+  aCtx.fillStyle='rgba(255,255,255,.04)';aCtx.font='9px var(--font-display)';aCtx.textAlign='center';
+  aCtx.fillText('LYMPH NODE',780,100);
+
+  // Draw pathogen
+  if(S.pathogen.alive){
+    aCtx.fillStyle='rgba(255,68,102,.15)';circle(aCtx,S.pathogen.x,S.pathogen.y,S.pathogen.r+14,true);
+    aCtx.fillStyle='rgba(255,68,102,.8)';circle(aCtx,S.pathogen.x,S.pathogen.y,S.pathogen.r,true);
+    aCtx.strokeStyle='rgba(255,170,185,.5)';aCtx.lineWidth=1.5;
+    for(let i=0;i<8;i++){
+      const a=Math.PI*2*i/8+t*.008;
+      aCtx.beginPath();aCtx.moveTo(S.pathogen.x+Math.cos(a)*S.pathogen.r,S.pathogen.y+Math.sin(a)*S.pathogen.r);
+      aCtx.lineTo(S.pathogen.x+Math.cos(a)*(S.pathogen.r+10),S.pathogen.y+Math.sin(a)*(S.pathogen.r+10));
+      aCtx.stroke();
+    }
+    aCtx.fillStyle='rgba(255,255,255,.08)';aCtx.font='9px var(--font-display)';
+    aCtx.fillText('PATHOGEN',S.pathogen.x,S.pathogen.y+S.pathogen.r+20);
+  }
+
+  // Draw entities (virus, infected cells)
+  S.entities.forEach(e=>{
+    if(!e.alive)return;
+    aCtx.save();aCtx.translate(e.x,e.y);
+    if(e.type==='virus'){
+      aCtx.rotate(e.pulse*.04);
+      aCtx.fillStyle='rgba(255,68,102,.7)';circle(aCtx,0,0,e.r,true);
+      aCtx.strokeStyle='rgba(255,170,185,.4)';aCtx.lineWidth=1;
+      for(let i=0;i<6;i++){const a=Math.PI*2*i/6;aCtx.beginPath();aCtx.moveTo(Math.cos(a)*e.r,Math.sin(a)*e.r);aCtx.lineTo(Math.cos(a)*(e.r+5),Math.sin(a)*(e.r+5));aCtx.stroke();}
+    }else if(e.type==='infected'){
+      aCtx.fillStyle='rgba(255,80,110,.12)';circle(aCtx,0,0,e.r+8,true);
+      aCtx.fillStyle='rgba(255,80,110,.7)';circle(aCtx,0,0,e.r,true);
+      aCtx.fillStyle='rgba(255,200,210,.5)';circle(aCtx,Math.sin(e.pulse)*3,Math.cos(e.pulse)*3,e.r*.35,true);
+      aCtx.fillStyle='rgba(255,50,80,.5)';
+      for(let i=0;i<3;i++){circle(aCtx,Math.cos(e.pulse+i*2)*e.r*.4,Math.sin(e.pulse+i*2)*e.r*.4,2.5,true);}
+      aCtx.fillStyle='rgba(255,255,255,.06)';aCtx.font='8px var(--font-display)';aCtx.textAlign='center';
+      aCtx.fillText('INFECTED',0,e.r+16);
+    }
+    aCtx.restore();
+  });
+
+  // Draw dendritic cell animation
+  if(S.dendriticCell&&(S.activeAnim==='dendritic'||A.step>0)){
+    const dc=S.dendriticCell;
+    // Dendritic cell — star-shaped with tendrils
+    aCtx.fillStyle='rgba(255,215,110,.15)';circle(aCtx,dc.x,dc.y,28,true);
+    aCtx.fillStyle='rgba(255,215,110,.85)';circle(aCtx,dc.x,dc.y,16,true);
+    aCtx.strokeStyle='rgba(255,215,110,.5)';aCtx.lineWidth=2;
+    for(let i=0;i<8;i++){
+      const a=t*.02+i*Math.PI/4;const len=20+Math.sin(t*.08+i)*6;
+      aCtx.beginPath();aCtx.moveTo(dc.x+Math.cos(a)*14,dc.y+Math.sin(a)*14);
+      aCtx.lineTo(dc.x+Math.cos(a)*len,dc.y+Math.sin(a)*len);aCtx.stroke();
+    }
+    // Antigen fragments
+    dc.fragments.forEach(f=>{
+      aCtx.fillStyle='rgba(255,180,80,.8)';circle(aCtx,f.x,f.y,4,true);
+    });
+    aCtx.fillStyle='rgba(255,215,110,.1)';aCtx.font='8px var(--font-display)';aCtx.textAlign='center';
+    aCtx.fillText('DENDRITIC CELL',dc.x,dc.y+34);
+    if(S.animTimer>80&&S.animTimer<180)
+      {aCtx.fillText('SAMPLING ANTIGEN...',dc.x,dc.y+46);}
+    if(S.animTimer>=180&&S.animTimer<300)
+      {aCtx.fillText('PRESENTING TO LYMPH NODE →',dc.x,dc.y+46);}
+  }
+
+  // Draw helper T-cell
+  if(S.helperCell&&(S.activeAnim==='helper'||A.step>1||(A.step>0&&A.order[0]!=='dendritic'))){
+    const hc=S.helperCell;
+    aCtx.fillStyle=hc.activated?'rgba(82,245,168,.15)':'rgba(82,245,168,.05)';
+    circle(aCtx,hc.x,hc.y,24,true);
+    aCtx.fillStyle=hc.activated?'rgba(82,245,168,.9)':'rgba(82,245,168,.4)';
+    circle(aCtx,hc.x,hc.y,14,true);
+    aCtx.fillStyle='rgba(255,255,255,.3)';circle(aCtx,hc.x+3,hc.y-3,5,true);
+    aCtx.fillStyle='rgba(82,245,168,.1)';aCtx.font='8px var(--font-display)';aCtx.textAlign='center';
+    aCtx.fillText('HELPER T-CELL',hc.x,hc.y+30);
+    if(hc.activated&&S.activeAnim==='helper'){aCtx.fillText('RELEASING CYTOKINES',hc.x,hc.y+42);}
+  }
+
+  // Draw cytokines
+  S.cytokines.forEach(c=>{
+    aCtx.globalAlpha=Math.max(0,c.life/120);
+    aCtx.fillStyle=c.color;circle(aCtx,c.x,c.y,c.r,true);
+  });
+  aCtx.globalAlpha=1;
+
+  // Draw killer T-cells
+  if(S.killerCells){
+    S.killerCells.forEach(kc=>{
+      aCtx.fillStyle='rgba(255,68,102,.15)';circle(aCtx,kc.x,kc.y,18,true);
+      aCtx.fillStyle='rgba(255,68,102,.9)';circle(aCtx,kc.x,kc.y,11,true);
+      aCtx.fillStyle='rgba(255,220,220,.4)';circle(aCtx,kc.x+2,kc.y-2,4,true);
+      if(kc.phase==='dock'){
+        // Show perforin/granzyme injection line
+        aCtx.strokeStyle='rgba(255,68,102,.5)';aCtx.lineWidth=2;aCtx.setLineDash([3,3]);
+        aCtx.beginPath();aCtx.moveTo(kc.x,kc.y);aCtx.lineTo(kc.target.x,kc.target.y);aCtx.stroke();
+        aCtx.setLineDash([]);
+        aCtx.fillStyle='rgba(255,255,255,.06)';aCtx.font='7px var(--font-display)';aCtx.textAlign='center';
+        aCtx.fillText('INJECTING GRANZYMES',kc.x,(kc.y+kc.target.y)/2-8);
+      }
+    });
+  }
+
+  // Draw B-cells
+  if(S.bcells){
+    S.bcells.forEach(bc=>{
+      aCtx.fillStyle='rgba(93,184,255,.12)';circle(aCtx,bc.x,bc.y,20,true);
+      aCtx.fillStyle=bc.phase==='plasma'?'rgba(93,184,255,.9)':'rgba(93,184,255,.6)';
+      circle(aCtx,bc.x,bc.y,12,true);
+      aCtx.fillStyle='rgba(200,230,255,.4)';circle(aCtx,bc.x+3,bc.y-3,4,true);
+    });
+    if(S.activeAnim==='bcell'&&S.animTimer>60){
+      aCtx.fillStyle='rgba(93,184,255,.08)';aCtx.font='9px var(--font-display)';aCtx.textAlign='center';
+      aCtx.fillText('CLONAL EXPANSION → PLASMA CELLS → ANTIBODIES',480,520);
+    }
+  }
+
+  // Draw antibodies (Y-shapes seeking virus)
+  S.antibodies.forEach(ab=>{
+    aCtx.strokeStyle='rgba(93,184,255,.7)';aCtx.lineWidth=2;
+    aCtx.beginPath();aCtx.moveTo(ab.x,ab.y+6);aCtx.lineTo(ab.x,ab.y-4);
+    aCtx.lineTo(ab.x-5,ab.y-10);aCtx.moveTo(ab.x,ab.y-4);aCtx.lineTo(ab.x+5,ab.y-10);
+    aCtx.stroke();
+  });
+
+  // Particles
+  S.particles.forEach(p=>{
+    aCtx.globalAlpha=Math.max(0,p.life/p.maxLife);
+    aCtx.fillStyle=p.color;circle(aCtx,p.x,p.y,p.r,true);
+  });
+  aCtx.globalAlpha=1;
+
+  // Status text
+  if(S.activeAnim){
+    aCtx.fillStyle='rgba(255,255,255,.06)';aCtx.font='11px var(--font-display)';aCtx.textAlign='center';
+    const labels={dendritic:'DENDRITIC CELL: SAMPLING & PRESENTING ANTIGEN',helper:'HELPER T-CELL: RELEASING CYTOKINE SIGNALS',cytotoxic:'CYTOTOXIC T-CELLS: TRIGGERING APOPTOSIS IN INFECTED CELLS',bcell:'B-CELLS: CLONAL EXPANSION & ANTIBODY PRODUCTION'};
+    aCtx.fillText(labels[S.activeAnim]||'',W/2,H-20);
+  }
+  if(A.done){
+    aCtx.fillStyle='rgba(82,245,168,.1)';aCtx.font='14px var(--font-display)';aCtx.textAlign='center';
+    aCtx.fillText('ADAPTIVE IMMUNITY ASSEMBLED',W/2,H-20);
+  }
 }
 
 $('btnToMemory').onclick=async()=>{
@@ -1299,21 +1582,86 @@ $('btnToMemory').onclick=async()=>{
 };
 
 // ═══════════════════════════════════════════════════════════
-// MEMORY PHASE (Stage 4)
+// MEMORY PHASE (Stage 4) — Interactive memory formation + reinfection
 // ═══════════════════════════════════════════════════════════
 const mC=$('memoryCanvas');
 const mCtx=mC.getContext('2d');
 let memAnimId=null;
+const memScene={t:0,phase:'store',particles:[],
+  memoryCells:[],bank:{x:430,y:80,r:60},dragging:null,stored:0,needed:4,
+  // reinfection phase
+  reinfectT:0,pathogens:[],responders:[],antibodies:[]
+};
 
 function initMemory(){
   G.memory={done:false,phase:0,t:0};
   $('btnToBoss').disabled=true;
+
+  const MS=memScene;
+  MS.t=0;MS.phase='store';MS.particles=[];MS.stored=0;MS.dragging=null;
+  MS.memoryCells=[];MS.pathogens=[];MS.responders=[];MS.antibodies=[];MS.reinfectT=0;
+
+  // Spawn memory cells the player must drag to the memory bank
+  const types=['B-Memory','T-Memory','B-Memory','T-Memory'];
+  for(let i=0;i<MS.needed;i++){
+    MS.memoryCells.push({
+      id:'mem'+i,type:types[i],x:120+i*100,y:420+rng(-20,20),
+      stored:false,r:18,pulse:rng(0,6.28),
+      color:types[i]==='B-Memory'?'#5db8ff':'#52f5a8'
+    });
+  }
+
+  $('btnMemoryTest').textContent='Trigger Second Exposure';
+  $('btnMemoryTest').disabled=true;
+
+  addLog('innateLog','',''  );// clear
   startMemoryAnim();
 }
 
+// Canvas interaction for memory
+mC.addEventListener('mousedown',evt=>{
+  if(!$('memoryScreen').classList.contains('active'))return;
+  const MS=memScene;if(MS.phase!=='store')return;
+  const p=canvasPos(mC,evt);
+  const cell=MS.memoryCells.find(c=>!c.stored&&Math.hypot(c.x-p.x,c.y-p.y)<c.r+10);
+  if(cell)MS.dragging=cell.id;
+});
+mC.addEventListener('mousemove',evt=>{
+  const MS=memScene;if(!MS.dragging)return;
+  const p=canvasPos(mC,evt);
+  const cell=MS.memoryCells.find(c=>c.id===MS.dragging);
+  if(cell){cell.x=p.x;cell.y=p.y;}
+});
+mC.addEventListener('mouseup',()=>{
+  const MS=memScene;if(!MS.dragging)return;
+  const cell=MS.memoryCells.find(c=>c.id===MS.dragging);
+  if(cell){
+    // Check if dropped on memory bank
+    if(Math.hypot(cell.x-MS.bank.x,cell.y-MS.bank.y)<MS.bank.r+cell.r){
+      cell.stored=true;cell.x=MS.bank.x+rng(-25,25);cell.y=MS.bank.y+rng(-25,25);
+      MS.stored++;
+      spawnParticles(MS.particles,cell.x,cell.y,cell.color+'cc',15);
+      G.score+=5;
+      if(MS.stored>=MS.needed){
+        $('btnMemoryTest').disabled=false;
+        $('adaptiveResponse')&&null;
+      }
+    }
+  }
+  MS.dragging=null;
+});
+
 $('btnMemoryTest').onclick=()=>{
   if(G.memory.done)return;
-  G.memory.done=true;G.memory.phase=1;
+  const MS=memScene;
+  if(MS.stored<MS.needed)return;
+  G.memory.done=true;MS.phase='reinfect';MS.reinfectT=0;
+
+  // Spawn incoming pathogens for reinfection
+  for(let i=0;i<10;i++){
+    MS.pathogens.push({x:rng(60,480),y:540+rng(0,40),vx:rng(-.3,.3),vy:-rng(.5,1.2),r:8,alive:true,pulse:rng(0,6.28)});
+  }
+
   $('btnToBoss').disabled=false;
   G.score+=15;updateHUD();
 };
@@ -1322,74 +1670,161 @@ function startMemoryAnim(){
   if(memAnimId)cancelAnimationFrame(memAnimId);
   function loop(){
     if(!$('memoryScreen').classList.contains('active')){memAnimId=requestAnimationFrame(loop);return;}
-    G.memory.t++;
-    const W=mC.width,H=mC.height,t=G.memory.t;
-    mCtx.clearRect(0,0,W,H);
-    const bg=mCtx.createLinearGradient(0,0,0,H);
-    bg.addColorStop(0,'#0c1230');bg.addColorStop(1,'#060a18');
-    mCtx.fillStyle=bg;mCtx.fillRect(0,0,W,H);
-
-    if(!G.memory.done){
-      // First exposure — slow response visualization
-      mCtx.fillStyle='rgba(255,255,255,.08)';
-      mCtx.font='13px var(--font-display)';mCtx.textAlign='center';
-      mCtx.fillText('FIRST EXPOSURE — SLOW RESPONSE',W/2,30);
-
-      // Scattered confused immune cells
-      for(let i=0;i<12;i++){
-        const x=80+((t*.2+i*60)%(W-160));
-        const y=100+Math.sin(t*.01+i)*80+i*35;
-        mCtx.fillStyle='rgba(93,184,255,.3)';circle(mCtx,x,y,8,true);
-        // question marks
-        mCtx.fillStyle='rgba(255,255,255,.15)';mCtx.font='10px var(--font-body)';
-        mCtx.fillText('?',x,y-14);
-      }
-      // pathogen
-      mCtx.fillStyle='rgba(255,68,102,.6)';
-      circle(mCtx,W/2+Math.sin(t*.02)*60,H/2,20+Math.sin(t*.04)*4,true);
-      mCtx.fillStyle='rgba(255,255,255,.15)';mCtx.font='11px var(--font-display)';
-      mCtx.fillText('PATHOGEN',W/2+Math.sin(t*.02)*60,H/2+40);
-    }else{
-      // Second exposure — rapid response
-      mCtx.fillStyle='rgba(82,245,168,.12)';
-      mCtx.font='13px var(--font-display)';mCtx.textAlign='center';
-      mCtx.fillText('SECOND EXPOSURE — MEMORY RESPONSE',W/2,30);
-
-      // Memory cells converging rapidly on pathogen
-      const px=W/2,py=H/2;
-      for(let i=0;i<16;i++){
-        const angle=Math.PI*2*i/16;
-        const prog=Math.min(1,(t-G.memory.t+200)*.008);
-        const startR=250,endR=30;
-        const r=lerp(startR,endR,prog);
-        const x=px+Math.cos(angle+t*.01)*r;
-        const y=py+Math.sin(angle+t*.01)*r;
-        mCtx.fillStyle='rgba(82,245,168,.7)';circle(mCtx,x,y,10,true);
-        // trail
-        mCtx.strokeStyle='rgba(82,245,168,.15)';mCtx.lineWidth=1;
-        mCtx.beginPath();mCtx.moveTo(x,y);
-        mCtx.lineTo(px+Math.cos(angle+t*.01)*(r+40),py+Math.sin(angle+t*.01)*(r+40));
-        mCtx.stroke();
-      }
-      // antibody shower
-      for(let i=0;i<25;i++){
-        const x=(t*.6+i*40)%(W);const y=(t*.4+i*30)%(H);
-        mCtx.strokeStyle='rgba(93,184,255,.3)';mCtx.lineWidth=1.5;
-        mCtx.beginPath();mCtx.moveTo(x,y);mCtx.lineTo(x,y-8);mCtx.lineTo(x-4,y-12);
-        mCtx.moveTo(x,y-8);mCtx.lineTo(x+4,y-12);mCtx.stroke();
-      }
-      // pathogen being destroyed
-      const shrink=Math.max(2,20-((G.memory.t-t+200)*.05));
-      mCtx.fillStyle='rgba(255,68,102,'+(shrink/20).toFixed(2)+')';
-      circle(mCtx,px,py,shrink,true);
-
-      mCtx.fillStyle='rgba(82,245,168,.2)';mCtx.font='12px var(--font-display)';
-      mCtx.fillText('PATHOGEN NEUTRALIZED',W/2,H-40);
-    }
-
+    updateMemoryScene();
+    drawMemoryScene();
     memAnimId=requestAnimationFrame(loop);
   }
   loop();
+}
+
+function updateMemoryScene(){
+  const MS=memScene;
+  MS.t++;
+
+  MS.particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;p.vx*=.97;p.vy*=.97;});
+  MS.particles=MS.particles.filter(p=>p.life>0);
+
+  if(MS.phase==='reinfect'){
+    MS.reinfectT++;
+    // Pathogens move up
+    MS.pathogens.forEach(p=>{
+      if(!p.alive)return;
+      p.x+=p.vx;p.y+=p.vy;p.pulse+=.06;
+    });
+
+    // After short delay, memory cells recognize and deploy responders
+    if(MS.reinfectT===40){
+      // Memory cells activate — spawn rapid responders
+      for(let i=0;i<8;i++){
+        MS.responders.push({x:MS.bank.x+rng(-30,30),y:MS.bank.y+rng(-20,20),target:null,r:10,
+          color:i<4?'#5db8ff':'#52f5a8',type:i<4?'antibody':'killer'});
+      }
+    }
+
+    // Responders seek pathogens
+    MS.responders.forEach(r=>{
+      if(!r.target||!r.target.alive){
+        r.target=MS.pathogens.find(p=>p.alive&&!MS.responders.some(rr=>rr!==r&&rr.target===p));
+      }
+      if(r.target&&r.target.alive){
+        const dx=r.target.x-r.x,dy=r.target.y-r.y,d=Math.max(1,Math.hypot(dx,dy));
+        r.x+=dx/d*4.5;r.y+=dy/d*4.5;// FAST — memory response is rapid
+        if(d<14){
+          r.target.alive=false;
+          spawnParticles(MS.particles,r.target.x,r.target.y,r.color+'cc',12);
+        }
+      }
+    });
+
+    // Spawn antibodies from memory B-cells
+    if(MS.reinfectT>50&&MS.reinfectT%8===0&&MS.reinfectT<200){
+      const target=MS.pathogens.find(p=>p.alive);
+      if(target){
+        MS.antibodies.push({x:MS.bank.x+rng(-20,20),y:MS.bank.y+rng(-10,10),tx:target.x,ty:target.y,life:100});
+      }
+    }
+    MS.antibodies.forEach(ab=>{
+      const dx=ab.tx-ab.x,dy=ab.ty-ab.y,d=Math.max(1,Math.hypot(dx,dy));
+      ab.x+=dx/d*3;ab.y+=dy/d*3;ab.life--;
+    });
+    MS.antibodies=MS.antibodies.filter(ab=>ab.life>0);
+  }
+}
+
+function drawMemoryScene(){
+  const MS=memScene;
+  const W=mC.width,H=mC.height,t=MS.t;
+  mCtx.clearRect(0,0,W,H);
+  const bg=mCtx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0c1230');bg.addColorStop(1,'#060a18');
+  mCtx.fillStyle=bg;mCtx.fillRect(0,0,W,H);
+
+  // Memory bank
+  const bk=MS.bank;
+  mCtx.fillStyle='rgba(179,140,255,.06)';circle(mCtx,bk.x,bk.y,bk.r+20,true);
+  mCtx.strokeStyle='rgba(179,140,255,.2)';mCtx.lineWidth=2;
+  mCtx.setLineDash([6,4]);circle(mCtx,bk.x,bk.y,bk.r,false,true);mCtx.setLineDash([]);
+  mCtx.fillStyle='rgba(179,140,255,.12)';circle(mCtx,bk.x,bk.y,bk.r,true);
+  mCtx.fillStyle='rgba(255,255,255,.1)';mCtx.font='10px var(--font-display)';mCtx.textAlign='center';
+  mCtx.fillText('MEMORY BANK',bk.x,bk.y-bk.r-10);
+  mCtx.fillStyle='rgba(255,255,255,.06)';mCtx.font='9px var(--font-body)';
+  mCtx.fillText(MS.stored+'/'+MS.needed+' stored',bk.x,bk.y+bk.r+16);
+
+  if(MS.phase==='store'){
+    // Title
+    mCtx.fillStyle='rgba(255,255,255,.07)';mCtx.font='12px var(--font-display)';mCtx.textAlign='center';
+    mCtx.fillText('DRAG MEMORY CELLS INTO THE MEMORY BANK',W/2,H-30);
+    mCtx.fillStyle='rgba(255,255,255,.04)';mCtx.font='10px var(--font-body)';
+    mCtx.fillText('After infection, B and T cells differentiate into long-lived memory cells',W/2,H-12);
+  }
+
+  // Memory cells
+  MS.memoryCells.forEach(mc=>{
+    const glow=mc.stored?'rgba(179,140,255,.2)':mc.color+'22';
+    mCtx.fillStyle=glow;circle(mCtx,mc.x,mc.y,mc.r+6,true);
+    mCtx.fillStyle=mc.stored?'rgba(179,140,255,.7)':mc.color;
+    circle(mCtx,mc.x,mc.y,mc.r,true);
+    mCtx.fillStyle='rgba(255,255,255,.3)';circle(mCtx,mc.x+3,mc.y-3,mc.r*.3,true);
+    // Label
+    mCtx.fillStyle='rgba(255,255,255,.15)';mCtx.font='8px var(--font-display)';mCtx.textAlign='center';
+    mCtx.fillText(mc.type,mc.x,mc.y+mc.r+14);
+    if(!mc.stored){
+      // "drag me" indicator
+      mc.pulse+=.04;
+      mCtx.strokeStyle=mc.color+'44';mCtx.lineWidth=1.5;
+      circle(mCtx,mc.x,mc.y,mc.r+10+Math.sin(mc.pulse)*4,false,true);
+    }
+  });
+
+  // Reinfection phase
+  if(MS.phase==='reinfect'){
+    mCtx.fillStyle='rgba(255,68,102,.08)';mCtx.font='12px var(--font-display)';mCtx.textAlign='center';
+    mCtx.fillText('SECOND EXPOSURE — MEMORY RESPONSE',W/2,H-30);
+
+    const allDead=MS.pathogens.every(p=>!p.alive);
+    if(allDead&&MS.reinfectT>80){
+      mCtx.fillStyle='rgba(82,245,168,.15)';mCtx.font='14px var(--font-display)';
+      mCtx.fillText('PATHOGEN NEUTRALIZED IN SECONDS',W/2,H/2+180);
+      mCtx.fillStyle='rgba(82,245,168,.08)';mCtx.font='10px var(--font-body)';
+      mCtx.fillText('Memory cells recognized the antigen instantly — no delay, no illness.',W/2,H/2+200);
+    }
+
+    // Draw pathogens
+    MS.pathogens.forEach(p=>{
+      if(!p.alive)return;
+      mCtx.save();mCtx.translate(p.x,p.y);mCtx.rotate(p.pulse*.04);
+      mCtx.fillStyle='rgba(255,68,102,.75)';circle(mCtx,0,0,p.r,true);
+      mCtx.strokeStyle='rgba(255,170,185,.4)';mCtx.lineWidth=1;
+      for(let i=0;i<6;i++){const a=Math.PI*2*i/6;mCtx.beginPath();mCtx.moveTo(Math.cos(a)*p.r,Math.sin(a)*p.r);mCtx.lineTo(Math.cos(a)*(p.r+5),Math.sin(a)*(p.r+5));mCtx.stroke();}
+      mCtx.restore();
+    });
+
+    // Draw rapid responders
+    MS.responders.forEach(r=>{
+      mCtx.fillStyle=r.color+'22';circle(mCtx,r.x,r.y,r.r+4,true);
+      mCtx.fillStyle=r.color;circle(mCtx,r.x,r.y,r.r,true);
+      // Trail
+      if(r.target&&r.target.alive){
+        mCtx.strokeStyle=r.color+'33';mCtx.lineWidth=1;
+        mCtx.beginPath();mCtx.moveTo(r.x,r.y);mCtx.lineTo(r.target.x,r.target.y);mCtx.stroke();
+      }
+    });
+
+    // Draw antibodies
+    MS.antibodies.forEach(ab=>{
+      mCtx.strokeStyle='rgba(93,184,255,.5)';mCtx.lineWidth=1.5;
+      mCtx.beginPath();mCtx.moveTo(ab.x,ab.y+4);mCtx.lineTo(ab.x,ab.y-3);
+      mCtx.lineTo(ab.x-4,ab.y-7);mCtx.moveTo(ab.x,ab.y-3);mCtx.lineTo(ab.x+4,ab.y-7);
+      mCtx.stroke();
+    });
+  }
+
+  // Particles
+  MS.particles.forEach(p=>{
+    mCtx.globalAlpha=Math.max(0,p.life/p.maxLife);
+    mCtx.fillStyle=p.color;circle(mCtx,p.x,p.y,p.r,true);
+  });
+  mCtx.globalAlpha=1;
 }
 
 $('btnToBoss').onclick=async()=>{
@@ -1720,28 +2155,11 @@ $('btnRestart').onclick=()=>{
 };
 
 // ═══════════════════════════════════════════════════════════
-// INIT — auto-start campaign on load
+// INIT — show title screen on load
 // ═══════════════════════════════════════════════════════════
 buildStars();
 updateHUD('—','—');
-
-// Launch campaign immediately
-(async()=>{
-  G.scenario=pick(SCENARIOS);
-  G.hp=100;G.score=0;
-  updateHUD('Cinematic',G.scenario.name);
-  await playCinematic([
-    'Every day, your body fights a war you never see.',
-    'Your <span class="hl">immune system</span> — the second most complex system in the human body — is always on guard.',
-    'Physical barriers. Chemical weapons. Specialized killer cells.',
-    'A <span class="hl">'+G.scenario.name+'</span> has been detected.',
-    'Your mission: guide the defense.'
-  ]);
-  await showStageIntro('01','Invasion Briefing','Study the threat before deploying defenses.');
-  loadScenarioBriefing();
-  showScreen('scenarioScreen');
-  updateHUD('Stage 1: Briefing');
-})();
+showScreen('heroScreen');
 </script>
 </body>
 </html>
