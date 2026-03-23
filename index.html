@@ -3,99 +3,2924 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Immune Defense Simulator</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>The War Inside</title>
+  <style>
+    :root {
+      --bg-0: #04070f;
+      --bg-1: #091121;
+      --bg-2: #0f1930;
+      --panel: rgba(12, 19, 36, 0.76);
+      --panel-2: rgba(16, 24, 46, 0.9);
+      --line: rgba(138, 178, 255, 0.16);
+      --text: #eef4ff;
+      --muted: #b9c8ee;
+      --blue: #71c7ff;
+      --blue-2: #4a79ff;
+      --cyan: #81f6ff;
+      --red: #ff5570;
+      --red-2: #ff7b91;
+      --green: #79f2b4;
+      --gold: #ffd97d;
+      --purple: #b996ff;
+      --good: #19b86f;
+      --warn: #f0b54a;
+      --bad: #e05b71;
+      --hud-h: 74px;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      --radius: 26px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 18%, rgba(77, 116, 255, 0.15), transparent 25%),
+        radial-gradient(circle at 80% 20%, rgba(255, 92, 114, 0.12), transparent 22%),
+        radial-gradient(circle at 50% 80%, rgba(68, 255, 214, 0.08), transparent 22%),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1) 45%, var(--bg-0));
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .hud {
+      position: fixed;
+      inset: 0 0 auto 0;
+      height: var(--hud-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 22px;
+      background: rgba(6, 11, 24, 0.62);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      z-index: 100;
+    }
+
+    .hud-block {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 2.8px;
+      text-transform: uppercase;
+      color: #f5f9ff;
+      white-space: nowrap;
+    }
+
+    .hud-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 38px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--line);
+      box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.02);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .pill-label {
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: 1.6px;
+      font-size: 11px;
+    }
+
+    .progress-track {
+      width: 120px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--blue), var(--cyan));
+      transition: width 0.35s ease;
+    }
+
+    .fx-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.96), rgba(255,255,255,0.1));
+      box-shadow: 0 0 14px rgba(255,255,255,0.24);
+      animation: driftUp linear infinite;
+    }
+
+    @keyframes driftUp {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.9;
+      }
+      70% {
+        opacity: 0.5;
+      }
+      100% {
+        transform: translateY(-118vh) scale(1.3);
+        opacity: 0;
+      }
+    }
+
+    .shell {
+      position: relative;
+      z-index: 2;
+      padding-top: var(--hud-h);
+    }
+
+    .screen {
+      min-height: calc(100vh - var(--hud-h));
+      padding: 30px 24px 40px;
+    }
+
+    .hero {
+      display: grid;
+      place-items: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-core {
+      position: relative;
+      max-width: 940px;
+      z-index: 2;
+    }
+
+    .hero-overline {
+      color: var(--cyan);
+      font-size: 13px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(64px, 10vw, 122px);
+      line-height: 0.92;
+      letter-spacing: 2px;
+      text-shadow:
+        0 0 20px rgba(255,255,255,0.12),
+        0 0 52px rgba(104, 150, 255, 0.12);
+    }
+
+    .hero p {
+      margin: 24px auto 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 20px;
+      line-height: 1.75;
+    }
+
+    .hero-actions {
+      margin-top: 34px;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.14);
+      color: #fff;
+      padding: 15px 24px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #d92a46, #ff7688);
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease, background 0.18s ease;
+      box-shadow: 0 14px 30px rgba(217, 42, 70, 0.25);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 16px 36px rgba(217, 42, 70, 0.36);
+      filter: brightness(1.05);
+    }
+
+    .btn.secondary {
+      background: linear-gradient(135deg, #2047ff, #65a0ff);
+      box-shadow: 0 14px 30px rgba(50, 104, 255, 0.24);
+    }
+
+    .btn.steel {
+      background: rgba(255,255,255,0.04);
+      box-shadow: none;
+      color: var(--text);
+    }
+
+    .hero-rings {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(133, 175, 255, 0.12);
+      animation: pulse 6s ease-in-out infinite;
+    }
+
+    .ring.r1 { width: 420px; height: 420px; }
+    .ring.r2 { width: 560px; height: 560px; animation-delay: 1s; }
+    .ring.r3 { width: 700px; height: 700px; animation-delay: 2s; }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(0.98);
+        opacity: 0.28;
+      }
+      50% {
+        transform: scale(1.02);
+        opacity: 0.55;
+      }
+    }
+
+    .grid {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      gap: 24px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      color: var(--cyan);
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1;
+    }
+
+    .lede {
+      margin: 14px 0 0;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 18px;
+      max-width: 820px;
+    }
+
+    .scenario-layout {
+      grid-template-columns: 1.05fr 0.95fr;
+      align-items: stretch;
+    }
+
+    .scenario-visual {
+      position: relative;
+      min-height: 660px;
+      overflow: hidden;
+      padding: 26px;
+    }
+
+    .scenario-info {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      justify-content: center;
+      min-height: 660px;
+    }
+
+    .scenario-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .mini-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px;
+    }
+
+    .mini-card h4 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .mini-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .scenario-hud {
+      position: absolute;
+      inset: auto 22px 22px 22px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      z-index: 4;
+    }
+
+    .status-card {
+      background: rgba(5, 10, 22, 0.68);
+      border: 1px solid rgba(158, 193, 255, 0.12);
+      border-radius: 20px;
+      padding: 16px;
+      min-height: 90px;
+    }
+
+    .status-label {
+      margin: 0 0 8px;
+      color: var(--cyan);
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .status-value {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .threat-scene {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      border-radius: var(--radius);
+    }
+
+    .tissue {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(94, 131, 255, 0.08), transparent 18%),
+        radial-gradient(circle at 75% 25%, rgba(255, 95, 120, 0.08), transparent 18%),
+        radial-gradient(circle at 60% 75%, rgba(99, 255, 220, 0.06), transparent 18%);
+    }
+
+    .airway {
+      position: absolute;
+      inset: 10% 8%;
+      border-radius: 80px;
+      border: 2px solid rgba(129, 246, 255, 0.18);
+      background:
+        linear-gradient(180deg, rgba(74, 164, 199, 0.08), rgba(51, 112, 168, 0.05)),
+        radial-gradient(circle at 50% 50%, rgba(124, 255, 223, 0.08), transparent 55%);
+      box-shadow: inset 0 0 50px rgba(129, 246, 255, 0.04);
+    }
+
+    .cilia-line {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(129, 246, 255, 0.3), rgba(129, 246, 255, 0.05));
+      animation: wave 2s linear infinite;
+    }
+
+    .cilia-line.c1 { top: 23%; }
+    .cilia-line.c2 { top: 40%; animation-delay: 0.3s; }
+    .cilia-line.c3 { top: 57%; animation-delay: 0.6s; }
+    .cilia-line.c4 { top: 74%; animation-delay: 0.9s; }
+
+    @keyframes wave {
+      0% { transform: translateX(0); opacity: 0.45; }
+      50% { transform: translateX(16px); opacity: 0.8; }
+      100% { transform: translateX(0); opacity: 0.45; }
+    }
+
+    .skin-layer {
+      position: absolute;
+      left: 5%;
+      right: 5%;
+      height: 26%;
+      border-radius: 28px;
+      border: 1px solid rgba(255, 203, 155, 0.16);
+    }
+
+    .skin-layer.top {
+      top: 10%;
+      background: linear-gradient(180deg, rgba(255, 207, 162, 0.22), rgba(188, 110, 77, 0.18));
+    }
+
+    .skin-layer.mid {
+      top: 38%;
+      background: linear-gradient(180deg, rgba(255, 120, 125, 0.12), rgba(120, 29, 53, 0.12));
+    }
+
+    .skin-layer.low {
+      top: 66%;
+      background: linear-gradient(180deg, rgba(170, 75, 105, 0.08), rgba(87, 31, 56, 0.08));
+    }
+
+    .cut-crack {
+      position: absolute;
+      top: 16%;
+      bottom: 18%;
+      left: 50%;
+      width: 40px;
+      transform: translateX(-50%);
+      background:
+        linear-gradient(180deg, rgba(255, 80, 98, 0.95), rgba(126, 17, 42, 0.92));
+      border-radius: 18px;
+      box-shadow: 0 0 20px rgba(255, 80, 98, 0.35);
+      z-index: 3;
+    }
+
+    .cut-crack::before,
+    .cut-crack::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 100%;
+      top: 0;
+      background: linear-gradient(180deg, rgba(255, 149, 149, 0.5), rgba(119, 17, 39, 0.4));
+      border-radius: 999px;
+    }
+
+    .cut-crack::before { left: -10px; }
+    .cut-crack::after { right: -10px; }
+
+    .digestive-tube {
+      position: absolute;
+      inset: 12% 10%;
+      border-radius: 70px;
+      border: 2px solid rgba(255, 165, 92, 0.18);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255, 220, 120, 0.06), transparent 50%),
+        linear-gradient(180deg, rgba(255, 166, 74, 0.06), rgba(130, 73, 8, 0.06));
+    }
+
+    .acid-pool {
+      position: absolute;
+      left: 16%;
+      right: 16%;
+      bottom: 14%;
+      height: 20%;
+      border-radius: 40px 40px 60px 60px;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(255, 233, 109, 0.25), rgba(255, 135, 40, 0.16) 55%, rgba(120, 55, 8, 0.1));
+      box-shadow: 0 0 35px rgba(255, 173, 68, 0.2);
+    }
+
+    .cell-grid {
+      position: absolute;
+      inset: 10%;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      z-index: 1;
+    }
+
+    .host-cell {
+      border-radius: 50%;
+      border: 1px solid rgba(157, 192, 255, 0.16);
+      background:
+        radial-gradient(circle at 35% 30%, rgba(126, 169, 255, 0.16), rgba(30, 53, 110, 0.08));
+      box-shadow: inset 0 0 24px rgba(255,255,255,0.03);
+      position: relative;
+    }
+
+    .host-cell.infected {
+      border-color: rgba(255, 99, 126, 0.3);
+      box-shadow:
+        inset 0 0 24px rgba(255, 91, 113, 0.12),
+        0 0 20px rgba(255, 91, 113, 0.16);
+    }
+
+    .host-cell.infected::after {
+      content: "";
+      position: absolute;
+      inset: 22%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 95, 120, 0.75), rgba(108, 11, 32, 0.2));
+      animation: flicker 1.2s ease-in-out infinite;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 0.7; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.07); }
+    }
+
+    .scenario-overlay {
+      position: absolute;
+      top: 22px;
+      left: 22px;
+      right: 22px;
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .overlay-card {
+      padding: 14px 16px;
+      background: rgba(5, 10, 22, 0.72);
+      border: 1px solid rgba(158, 193, 255, 0.12);
+      border-radius: 18px;
+      min-width: 220px;
+      max-width: 360px;
+    }
+
+    .overlay-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .overlay-card strong {
+      color: var(--text);
+    }
+
+    .stage-layout {
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: start;
+    }
+
+    .arena-wrap {
+      padding: 22px;
+    }
+
+    .arena-frame {
+      position: relative;
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid rgba(160, 196, 255, 0.14);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(100, 151, 255, 0.08), transparent 50%),
+        linear-gradient(180deg, rgba(18, 27, 53, 0.96), rgba(7, 14, 28, 0.98));
+      min-height: 660px;
+      box-shadow: inset 0 0 60px rgba(255,255,255,0.03);
+    }
+
+    #arenaCanvas {
+      width: 100%;
+      height: 660px;
+      display: block;
+    }
+
+    .arena-ui {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .arena-bar {
+      min-width: 200px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(4, 9, 21, 0.7);
+      border: 1px solid rgba(160, 196, 255, 0.12);
+      pointer-events: auto;
+    }
+
+    .arena-bar h4 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      letter-spacing: 1.6px;
+      color: var(--cyan);
+      text-transform: uppercase;
+    }
+
+    .bar {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    .threat-bar > span {
+      width: 76%;
+      background: linear-gradient(90deg, #ff7f7f, #ff4260);
+    }
+
+    .defense-bar > span {
+      width: 10%;
+      background: linear-gradient(90deg, #57d1ff, #79f2b4);
+    }
+
+    .arena-note {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .stage-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 660px;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .action-btn {
+      appearance: none;
+      min-height: 72px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      padding: 14px 16px;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(129, 246, 255, 0.32);
+      background: rgba(102, 170, 255, 0.08);
+    }
+
+    .action-btn .name {
+      display: block;
+      font-weight: 800;
+      margin-bottom: 5px;
+      font-size: 15px;
+    }
+
+    .action-btn .desc {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .log-box,
+    .mission-box,
+    .lesson-box {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 18px;
+    }
+
+    .log-box {
+      min-height: 180px;
+    }
+
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 250px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .log-entry {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 12px 14px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .log-entry.good { border-color: rgba(121, 242, 180, 0.3); }
+    .log-entry.warn { border-color: rgba(255, 205, 92, 0.28); }
+    .log-entry.bad { border-color: rgba(255, 100, 126, 0.3); }
+
+    .tool-chip-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tool-chip {
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+    }
+
+    .tool-chip.active {
+      color: #fff;
+      border-color: rgba(129, 246, 255, 0.3);
+      background: rgba(129, 246, 255, 0.08);
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .sequence-layout {
+      grid-template-columns: 0.95fr 1.05fr;
+      align-items: stretch;
+    }
+
+    .sequence-left,
+    .sequence-right,
+    .boss-left,
+    .boss-right {
+      padding: 24px;
+      min-height: 620px;
+    }
+
+    .sequence-cards,
+    .boss-abilities {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .sequence-card,
+    .ability-card {
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      padding: 18px;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    .sequence-card:hover,
+    .ability-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(129, 246, 255, 0.28);
+      background: rgba(100, 151, 255, 0.08);
+    }
+
+    .sequence-card h4,
+    .ability-card h4 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .sequence-card p,
+    .ability-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .sequence-track {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .sequence-slot {
+      border-radius: 18px;
+      border: 1px dashed rgba(158, 193, 255, 0.2);
+      background: rgba(255,255,255,0.03);
+      padding: 14px 16px;
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      color: var(--muted);
+    }
+
+    .sequence-slot.filled {
+      border-style: solid;
+      border-color: rgba(121, 242, 180, 0.3);
+      color: #fff;
+      background: rgba(121, 242, 180, 0.06);
+    }
+
+    .memory-grid {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+
+    .memory-card {
+      padding: 24px;
+      min-height: 460px;
+    }
+
+    .compare-box {
+      border-radius: 22px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      padding: 18px;
+      margin-top: 14px;
+    }
+
+    .compare-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .compare-row:last-child {
+      border-bottom: none;
+    }
+
+    .memory-burst {
+      margin-top: 14px;
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(129, 246, 255, 0.06);
+      border: 1px solid rgba(129, 246, 255, 0.18);
+      color: var(--muted);
+    }
+
+    .boss-layout {
+      grid-template-columns: 1.05fr 0.95fr;
+      align-items: stretch;
+    }
+
+    .boss-arena {
+      position: relative;
+      min-height: 640px;
+      overflow: hidden;
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(255, 80, 110, 0.12), transparent 25%),
+        radial-gradient(circle at 50% 50%, rgba(132, 75, 255, 0.08), transparent 45%),
+        linear-gradient(180deg, rgba(29, 9, 28, 0.9), rgba(13, 10, 27, 0.98));
+      border: 1px solid rgba(255, 115, 150, 0.14);
+      box-shadow: var(--shadow);
+    }
+
+    #bossCanvas {
+      width: 100%;
+      height: 640px;
+      display: block;
+    }
+
+    .boss-ui {
+      position: absolute;
+      inset: 18px 18px auto 18px;
+      display: grid;
+      gap: 12px;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .boss-health,
+    .boss-phase {
+      pointer-events: auto;
+      border-radius: 18px;
+      padding: 14px 16px;
+      background: rgba(10, 7, 20, 0.68);
+      border: 1px solid rgba(255, 113, 146, 0.18);
+      min-width: 220px;
+    }
+
+    .boss-bar > span {
+      width: 100%;
+      background: linear-gradient(90deg, #ff4d6f, #ff90a4);
+    }
+
+    .boss-right {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .boss-log {
+      min-height: 220px;
+    }
+
+    .boss-ability-card.ready {
+      border-color: rgba(129, 246, 255, 0.28);
+      background: rgba(129, 246, 255, 0.08);
+    }
+
+    .center-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-space {
+      height: 40px;
+    }
+
+    @media (max-width: 1200px) {
+      .scenario-layout,
+      .stage-layout,
+      .sequence-layout,
+      .memory-grid,
+      .boss-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .scenario-visual,
+      .scenario-info,
+      .stage-panel,
+      .sequence-left,
+      .sequence-right,
+      .boss-left,
+      .boss-right,
+      .memory-card {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 840px) {
+      .scenario-cards,
+      .action-grid,
+      .sequence-cards,
+      .boss-abilities {
+        grid-template-columns: 1fr;
+      }
+
+      .scenario-hud {
+        grid-template-columns: 1fr;
+      }
+
+      .hud {
+        height: auto;
+        min-height: 74px;
+        padding: 10px 14px;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .shell {
+        padding-top: 90px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .screen {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .hero p,
+      .lede {
+        font-size: 16px;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .hero-actions,
+      .row {
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div id="app">
-    <div class="topbar">
-      <div class="title-wrap">
-        <h1>Immune Defense Simulator</h1>
-        <p>Defend the body through barriers, innate immunity, and adaptive immunity.</p>
+  <div class="hud">
+    <div class="hud-block">
+      <div class="brand">The War Inside</div>
+      <div class="hud-pill">
+        <span class="pill-label">Stage</span>
+        <span id="hudStage">Loading</span>
       </div>
-
-      <div class="hud">
-        <div class="hud-card">
-          <div class="hud-label">Scenario</div>
-          <div class="hud-value" id="hudScenario">—</div>
-        </div>
-        <div class="hud-card">
-          <div class="hud-label">Phase</div>
-          <div class="hud-value" id="hudPhase">Start</div>
-        </div>
-        <div class="hud-card">
-          <div class="hud-label">Health</div>
-          <div class="hud-value" id="hudHealth">100</div>
-        </div>
-        <div class="hud-card">
-          <div class="hud-label">Score</div>
-          <div class="hud-value" id="hudScore">0</div>
-        </div>
+      <div class="hud-pill">
+        <span class="pill-label">Scenario</span>
+        <span id="hudScenario">Uninitialized</span>
       </div>
     </div>
 
-    <div class="main">
-      <div class="stage-wrap">
-        <canvas id="gameCanvas" width="860" height="640"></canvas>
-      </div>
-
-      <div class="panel">
-        <div class="card">
-          <h2 id="panelTitle">Welcome, Defender</h2>
-          <p id="panelText" class="muted">
-            Start a random infection or choose a specific body entry point. Each run changes the first line of defense and how the immune system should respond.
-          </p>
-          <div class="button-row" id="primaryButtons">
-            <button id="btnRandom">Start Random Infection</button>
-            <button class="secondary" id="btnChoose">Choose Scenario</button>
-            <button class="dark" id="btnRestart" style="display:none;">Restart</button>
-          </div>
+    <div class="hud-block">
+      <div class="hud-pill">
+        <span class="pill-label">Progress</span>
+        <div class="progress-track">
+          <div class="progress-fill" id="hudProgressFill"></div>
         </div>
-
-        <div class="card" id="choiceContainer" style="display:none;">
-          <h3>Choose an infection start</h3>
-          <div class="choices" id="choices"></div>
-        </div>
-
-        <div class="card">
-          <h3>Controls</h3>
-          <div id="controlsText" class="muted">
-            Mouse to interact. In the phagocyte phase, move the cursor to guide the macrophage.
-          </div>
-          <div class="button-row" id="contextButtons"></div>
-        </div>
-
-        <div class="card">
-          <h3>Legend</h3>
-          <div class="legend">
-            <div class="legend-item"><span class="dot red-dot"></span>Pathogens</div>
-            <div class="legend-item"><span class="dot cyan-dot"></span>Immune cells</div>
-            <div class="legend-item"><span class="dot yellow-dot"></span>Barrier actions</div>
-            <div class="legend-item"><span class="dot green-dot"></span>Antibody match</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>What this version teaches</h3>
-          <div>
-            <span class="pill">Skin barrier</span>
-            <span class="pill">Mucus + cilia</span>
-            <span class="pill">Stomach acid</span>
-            <span class="pill">Inflammation</span>
-            <span class="pill">Phagocytes</span>
-            <span class="pill">B cells</span>
-            <span class="pill">Antibodies</span>
-            <span class="pill">Memory cells</span>
-          </div>
-        </div>
-
-        <div class="footer-note">
-          This version is split into three files so it is much easier to edit and improve.
-        </div>
+        <span id="hudProgressText">0%</span>
       </div>
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <div class="fx-layer" id="fxLayer"></div>
+
+  <div class="shell">
+    <section class="screen hero" id="heroScreen">
+      <div class="hero-rings">
+        <div class="ring r1"></div>
+        <div class="ring r2"></div>
+        <div class="ring r3"></div>
+      </div>
+
+      <div class="hero-core">
+        <div class="hero-overline">Interactive Immune Defense Campaign</div>
+        <h1>The War Inside</h1>
+        <p>
+          A cinematic immune-system simulation with randomized infections, live defense arenas,
+          adaptive immunity sequencing, memory response, and a late-game cancer boss fight.
+        </p>
+
+        <div class="hero-actions">
+          <button class="btn" id="startCampaignBtn">Start New Simulation</button>
+          <button class="btn secondary" id="rerollBtn">Reroll Scenario</button>
+          <button class="btn steel" id="heroInfoBtn">How It Works</button>
+        </div>
+
+        <div class="center-note" id="heroScenarioPreview" style="margin-top:18px;">
+          Scenario preview: Randomized on launch.
+        </div>
+      </div>
+    </section>
+
+    <section class="screen hidden" id="scenarioScreen">
+      <div class="grid scenario-layout">
+        <div class="panel scenario-visual">
+          <div class="scenario-overlay">
+            <div class="overlay-card">
+              <p><strong id="scenarioOverlayTitle">Threat Scan</strong><br><span id="scenarioOverlayText">Awaiting initialization.</span></p>
+            </div>
+            <div class="overlay-card">
+              <p><strong>Mission</strong><br><span id="scenarioOverlayMission">Study the entry route and predict which defenses fit the situation.</span></p>
+            </div>
+          </div>
+
+          <div class="threat-scene" id="threatScene"></div>
+
+          <div class="scenario-hud">
+            <div class="status-card">
+              <p class="status-label">Entry Route</p>
+              <p class="status-value" id="entryRouteText">--</p>
+            </div>
+            <div class="status-card">
+              <p class="status-label">Threat Type</p>
+              <p class="status-value" id="threatTypeText">--</p>
+            </div>
+            <div class="status-card">
+              <p class="status-label">Best Early Focus</p>
+              <p class="status-value" id="bestFocusText">--</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel scenario-info">
+          <div class="tag">Stage 1</div>
+          <h2 id="scenarioTitle">Invasion Begins</h2>
+          <p class="lede" id="scenarioLede">
+            A foreign threat has breached one of the body's entry points.
+          </p>
+
+          <div class="scenario-cards">
+            <div class="mini-card">
+              <h4>Pathogen</h4>
+              <p id="scenarioPathogenText"></p>
+            </div>
+            <div class="mini-card">
+              <h4>Antigen</h4>
+              <p id="scenarioAntigenText"></p>
+            </div>
+            <div class="mini-card">
+              <h4>Why Location Matters</h4>
+              <p id="scenarioLocationText"></p>
+            </div>
+            <div class="mini-card">
+              <h4>Player Goal</h4>
+              <p id="scenarioGoalText"></p>
+            </div>
+          </div>
+
+          <div class="row">
+            <button class="btn" id="continueToInnateBtn">Enter Stage 2: Innate Defense</button>
+            <button class="btn steel" id="backToHeroBtn">Return to Launch</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen hidden" id="innateScreen">
+      <div class="grid stage-layout">
+        <div class="panel arena-wrap">
+          <div class="arena-frame">
+            <canvas id="arenaCanvas" width="960" height="660"></canvas>
+
+            <div class="arena-ui">
+              <div class="arena-bar">
+                <h4>Threat Level</h4>
+                <div class="bar threat-bar"><span id="threatFill"></span></div>
+                <div class="arena-note" id="threatLabel">76%</div>
+              </div>
+
+              <div class="arena-bar">
+                <h4>Defense Progress</h4>
+                <div class="bar defense-bar"><span id="defenseFill"></span></div>
+                <div class="arena-note" id="defenseLabel">10%</div>
+              </div>
+
+              <div class="arena-bar">
+                <h4>Current Tool</h4>
+                <div class="arena-note" id="activeToolLabel">Select an action below.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel stage-panel">
+          <div>
+            <div class="tag">Stage 2</div>
+            <h2>Innate Defense Arena</h2>
+            <p class="lede" id="innateLede">
+              The body responds immediately with broad, fast defenses. Use the right tools for the scenario.
+            </p>
+          </div>
+
+          <div class="mission-box">
+            <div class="tag">Mission Brief</div>
+            <p id="missionText"></p>
+          </div>
+
+          <div class="tool-chip-row" id="toolChipRow"></div>
+
+          <div class="action-grid" id="actionGrid"></div>
+
+          <div class="lesson-box" id="responseBox">
+            <div class="tag">System Response</div>
+            <p id="responseText">Choose an action. Some will fit this scenario very well. Others will be weak or mistimed.</p>
+          </div>
+
+          <div class="log-box">
+            <div class="tag">Action Log</div>
+            <div class="log-list" id="logList"></div>
+          </div>
+
+          <div class="row">
+            <button class="btn secondary" id="retryInnateBtn">Retry Stage 2</button>
+            <button class="btn hidden" id="toAdaptiveBtn">Advance to Adaptive Response</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen hidden" id="adaptiveScreen">
+      <div class="grid sequence-layout">
+        <div class="panel sequence-left">
+          <div class="tag">Stage 3</div>
+          <h2>Adaptive Response</h2>
+          <p class="lede">
+            The innate system bought time. Now build the specialized immune sequence in the correct order.
+          </p>
+
+          <div class="mission-box">
+            <div class="tag">Adaptive Logic</div>
+            <p id="adaptiveIntroText">
+              Start with antigen presentation. Then coordinate the immune response, direct cell-killing if needed, and activate antibody production.
+            </p>
+          </div>
+
+          <div class="sequence-track" id="sequenceTrack">
+            <div class="sequence-slot" data-slot="0">Step 1: Awaiting correct activation.</div>
+            <div class="sequence-slot" data-slot="1">Step 2: Awaiting correct activation.</div>
+            <div class="sequence-slot" data-slot="2">Step 3: Awaiting correct activation.</div>
+            <div class="sequence-slot" data-slot="3">Step 4: Awaiting correct activation.</div>
+          </div>
+
+          <div class="row" style="margin-top:18px;">
+            <button class="btn secondary" id="retryAdaptiveBtn">Retry Stage 3</button>
+            <button class="btn hidden" id="toMemoryBtn">Advance to Memory Phase</button>
+          </div>
+        </div>
+
+        <div class="panel sequence-right">
+          <div class="tag">Specialized Choices</div>
+          <div class="sequence-cards" id="sequenceCards"></div>
+
+          <div class="lesson-box" style="margin-top:18px;">
+            <div class="tag">Adaptive Feedback</div>
+            <p id="adaptiveResponseText">
+              Choose a card to start assembling the correct response.
+            </p>
+          </div>
+
+          <div class="log-box" style="margin-top:18px;">
+            <div class="tag">Sequence Log</div>
+            <div class="log-list" id="adaptiveLogList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen hidden" id="memoryScreen">
+      <div class="grid memory-grid">
+        <div class="panel memory-card">
+          <div class="tag">Stage 4</div>
+          <h2>Memory and Immunity</h2>
+          <p class="lede">
+            The infection has been controlled. Now the immune system stores information for a faster future response.
+          </p>
+
+          <div class="compare-box">
+            <div class="tag">First Exposure</div>
+            <div class="compare-row"><span>Recognition speed</span><strong>Slow</strong></div>
+            <div class="compare-row"><span>Matching the threat</span><strong>Takes time</strong></div>
+            <div class="compare-row"><span>Adaptive buildup</span><strong>Delayed</strong></div>
+            <div class="compare-row"><span>Illness chance</span><strong>Higher</strong></div>
+          </div>
+
+          <div class="compare-box">
+            <div class="tag">Second Exposure</div>
+            <div class="compare-row"><span>Recognition speed</span><strong>Very fast</strong></div>
+            <div class="compare-row"><span>Matching the threat</span><strong>Already stored</strong></div>
+            <div class="compare-row"><span>Antibody readiness</span><strong>Rapid</strong></div>
+            <div class="compare-row"><span>Illness chance</span><strong>Often much lower</strong></div>
+          </div>
+        </div>
+
+        <div class="panel memory-card">
+          <div class="tag">Memory Simulation</div>
+          <p class="lede">
+            Trigger the same pathogen again and watch how memory cells change the response.
+          </p>
+
+          <div class="memory-burst" id="memoryResultBox">
+            Memory cells are standing by. Trigger the second exposure to compare the response.
+          </div>
+
+          <div class="row" style="margin-top:22px;">
+            <button class="btn" id="memoryBurstBtn">Trigger Second Exposure</button>
+            <button class="btn secondary hidden" id="toBossBtn">Advance to Cancer Boss</button>
+          </div>
+
+          <div class="log-box" style="margin-top:22px;">
+            <div class="tag">Memory Notes</div>
+            <div class="log-list" id="memoryLogList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen hidden" id="bossScreen">
+      <div class="grid boss-layout">
+        <div class="boss-left">
+          <div class="tag">Final Stage</div>
+          <h2>Cancer Boss Fight</h2>
+          <p class="lede">
+            Cancer is different from bacteria and viruses because it begins from the body's own cells.
+            The tumor grows, mutates, steals resources, and can switch off T-cells using checkpoints.
+          </p>
+
+          <div class="boss-arena">
+            <canvas id="bossCanvas" width="960" height="640"></canvas>
+
+            <div class="boss-ui">
+              <div class="boss-health">
+                <div class="tag">Tumor Integrity</div>
+                <div class="bar boss-bar"><span id="bossHealthFill"></span></div>
+                <div class="arena-note" id="bossHealthLabel">100%</div>
+              </div>
+
+              <div class="boss-phase">
+                <div class="tag">Boss Phase</div>
+                <div class="arena-note" id="bossPhaseLabel">Phase 1: Growth</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel boss-right">
+          <div class="mission-box">
+            <div class="tag">Boss Mechanics</div>
+            <p id="bossBriefText">
+              The tumor starts by growing and shielding itself. Later it activates checkpoint suppression. Use the right medical tools to reopen the immune attack.
+            </p>
+          </div>
+
+          <div class="boss-abilities" id="bossAbilities"></div>
+
+          <div class="lesson-box">
+            <div class="tag">Boss Feedback</div>
+            <p id="bossResponseText">
+              Choose an ability. Some are strongest at specific phases of the boss fight.
+            </p>
+          </div>
+
+          <div class="log-box boss-log">
+            <div class="tag">Boss Log</div>
+            <div class="log-list" id="bossLogList"></div>
+          </div>
+
+          <div class="row">
+            <button class="btn secondary" id="retryBossBtn">Retry Boss Fight</button>
+            <button class="btn hidden" id="restartCampaignBtn">Restart Full Campaign</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer-space"></div>
+  </div>
+
+  <script>
+    const heroScreen = document.getElementById("heroScreen");
+    const scenarioScreen = document.getElementById("scenarioScreen");
+    const innateScreen = document.getElementById("innateScreen");
+    const adaptiveScreen = document.getElementById("adaptiveScreen");
+    const memoryScreen = document.getElementById("memoryScreen");
+    const bossScreen = document.getElementById("bossScreen");
+
+    const hudStage = document.getElementById("hudStage");
+    const hudScenario = document.getElementById("hudScenario");
+    const hudProgressFill = document.getElementById("hudProgressFill");
+    const hudProgressText = document.getElementById("hudProgressText");
+
+    const startCampaignBtn = document.getElementById("startCampaignBtn");
+    const rerollBtn = document.getElementById("rerollBtn");
+    const heroInfoBtn = document.getElementById("heroInfoBtn");
+    const heroScenarioPreview = document.getElementById("heroScenarioPreview");
+
+    const continueToInnateBtn = document.getElementById("continueToInnateBtn");
+    const backToHeroBtn = document.getElementById("backToHeroBtn");
+
+    const scenarioTitle = document.getElementById("scenarioTitle");
+    const scenarioLede = document.getElementById("scenarioLede");
+    const scenarioPathogenText = document.getElementById("scenarioPathogenText");
+    const scenarioAntigenText = document.getElementById("scenarioAntigenText");
+    const scenarioLocationText = document.getElementById("scenarioLocationText");
+    const scenarioGoalText = document.getElementById("scenarioGoalText");
+    const scenarioOverlayTitle = document.getElementById("scenarioOverlayTitle");
+    const scenarioOverlayText = document.getElementById("scenarioOverlayText");
+    const scenarioOverlayMission = document.getElementById("scenarioOverlayMission");
+    const entryRouteText = document.getElementById("entryRouteText");
+    const threatTypeText = document.getElementById("threatTypeText");
+    const bestFocusText = document.getElementById("bestFocusText");
+    const threatScene = document.getElementById("threatScene");
+
+    const missionText = document.getElementById("missionText");
+    const actionGrid = document.getElementById("actionGrid");
+    const responseText = document.getElementById("responseText");
+    const logList = document.getElementById("logList");
+    const toolChipRow = document.getElementById("toolChipRow");
+    const retryInnateBtn = document.getElementById("retryInnateBtn");
+    const toAdaptiveBtn = document.getElementById("toAdaptiveBtn");
+    const activeToolLabel = document.getElementById("activeToolLabel");
+
+    const threatFill = document.getElementById("threatFill");
+    const defenseFill = document.getElementById("defenseFill");
+    const threatLabel = document.getElementById("threatLabel");
+    const defenseLabel = document.getElementById("defenseLabel");
+
+    const sequenceCards = document.getElementById("sequenceCards");
+    const sequenceTrack = document.getElementById("sequenceTrack");
+    const adaptiveResponseText = document.getElementById("adaptiveResponseText");
+    const adaptiveLogList = document.getElementById("adaptiveLogList");
+    const retryAdaptiveBtn = document.getElementById("retryAdaptiveBtn");
+    const toMemoryBtn = document.getElementById("toMemoryBtn");
+    const adaptiveIntroText = document.getElementById("adaptiveIntroText");
+
+    const memoryBurstBtn = document.getElementById("memoryBurstBtn");
+    const toBossBtn = document.getElementById("toBossBtn");
+    const memoryResultBox = document.getElementById("memoryResultBox");
+    const memoryLogList = document.getElementById("memoryLogList");
+
+    const bossAbilities = document.getElementById("bossAbilities");
+    const bossResponseText = document.getElementById("bossResponseText");
+    const bossLogList = document.getElementById("bossLogList");
+    const retryBossBtn = document.getElementById("retryBossBtn");
+    const restartCampaignBtn = document.getElementById("restartCampaignBtn");
+    const bossHealthFill = document.getElementById("bossHealthFill");
+    const bossHealthLabel = document.getElementById("bossHealthLabel");
+    const bossPhaseLabel = document.getElementById("bossPhaseLabel");
+    const bossBriefText = document.getElementById("bossBriefText");
+
+    const arenaCanvas = document.getElementById("arenaCanvas");
+    const arenaCtx = arenaCanvas.getContext("2d");
+    const bossCanvas = document.getElementById("bossCanvas");
+    const bossCtx = bossCanvas.getContext("2d");
+
+    const fxLayer = document.getElementById("fxLayer");
+
+    const scenarioPool = [
+      {
+        key: "respiratory",
+        name: "Respiratory Infection",
+        entryRoute: "Airway / mucous membrane",
+        threatType: "Virus-heavy particle cloud",
+        bestFocus: "Mucus + phagocytes",
+        pathogenText: "A viral invader enters through the nose or mouth and tries to reach deeper airway tissue.",
+        antigenText: "Its outer proteins act like recognizable tags. If enough pieces are sampled, the adaptive system can match the threat later.",
+        locationText: "Respiratory defenses are not the same as skin or stomach defenses. Mucus and airway patrol cells matter much more here.",
+        goalText: "Slow the incoming microbes, trap what you can, and engulf exposed threats before too many infect cells.",
+        lede: "The threat entered through the respiratory tract. Fast, broad defenses must slow it before specialized immunity fully builds.",
+        overlayTitle: "Airway breach detected",
+        overlayText: "Incoming pathogen load rising through the mucous membranes.",
+        overlayMission: "Use early respiratory defenses. Some options fit this route extremely well. Others will be weak or mistimed.",
+        missionText: "Respiratory entry means mucus, cilia, fever support, and phagocytes are relevant. Skin sealing and stomach acid will not solve this route well.",
+        adaptiveIntro: "For this viral-style airway threat, antigen presentation and helper signaling matter, followed by infected-cell control and antibody production.",
+        innateActions: [
+          { id: "mucusTrap", name: "Mucus Trap", desc: "Draw sticky zones that trap microbes.", type: "good" },
+          { id: "deployPhagocytes", name: "Deploy Phagocytes", desc: "Drag immune cells to engulf microbes.", type: "good" },
+          { id: "triggerFever", name: "Trigger Fever", desc: "Temporarily slows pathogens.", type: "neutral" },
+          { id: "sealSkin", name: "Skin Barrier", desc: "Strong barrier, wrong location.", type: "bad" },
+          { id: "stomachAcid", name: "Stomach Acid", desc: "Helpful in digestion, weak here.", type: "neutral" },
+          { id: "nkBurst", name: "NK Cell Sweep", desc: "Destroys infected cells if they appear.", type: "good" }
+        ],
+        adaptiveOrder: ["dendritic", "helper", "cytotoxic", "bcell"]
+      },
+      {
+        key: "cut",
+        name: "Skin Wound Infection",
+        entryRoute: "Cut / tissue breach",
+        threatType: "Bacteria-heavy wound entry",
+        bestFocus: "Seal wound + phagocytes",
+        pathogenText: "Bacteria are entering through a fresh cut and spreading into the local tissue around the wound.",
+        antigenText: "Their surface structures can later be recognized by immune cells and antibodies, but the body first needs local control.",
+        locationText: "This is a barrier failure. Sealing the breach and controlling the immediate local invasion matter more than airway tools.",
+        goalText: "Reduce incoming bacterial flow, close the entry point, and use cell-based innate defenses to contain the tissue spread.",
+        lede: "A physical break in the skin gives bacteria direct access to tissue. The body must contain the breach quickly.",
+        overlayTitle: "Tissue breach detected",
+        overlayText: "Local bacterial entry rising through the damaged skin barrier.",
+        overlayMission: "Close the route, contain the entry, and let phagocytes clean the exposed tissue.",
+        missionText: "For a wound, sealing the breach and deploying phagocytes fit extremely well. Respiratory mucus tools will not help much.",
+        adaptiveIntro: "For this bacterial wound scenario, antigen presentation and helper activation still matter, followed by B-cell support and targeted cleanup.",
+        innateActions: [
+          { id: "sealClot", name: "Seal Wound / Clot", desc: "Patch the cut to reduce new entry.", type: "good" },
+          { id: "deployPhagocytes", name: "Deploy Phagocytes", desc: "Drag immune cells to engulf bacteria.", type: "good" },
+          { id: "triggerInflammation", name: "Inflammation Pulse", desc: "Boosts local response, but can cost comfort.", type: "neutral" },
+          { id: "mucusTrap", name: "Mucus Trap", desc: "Strong in airways, weak for a cut.", type: "bad" },
+          { id: "stomachAcid", name: "Stomach Acid", desc: "Wrong body region.", type: "bad" },
+          { id: "triggerFever", name: "Trigger Fever", desc: "Supportive, not the main local fix.", type: "neutral" }
+        ],
+        adaptiveOrder: ["dendritic", "helper", "bcell", "cytotoxic"]
+      },
+      {
+        key: "digestive",
+        name: "Foodborne / Digestive Entry",
+        entryRoute: "Digestive tract",
+        threatType: "Swallowed pathogen cluster",
+        bestFocus: "Stomach acid + cleanup",
+        pathogenText: "A pathogen was swallowed and has reached the digestive route, where chemical barriers matter early.",
+        antigenText: "Its proteins and sugars can be sampled later, but the body first tries to kill or weaken it chemically.",
+        locationText: "Digestive defenses rely more on acidic conditions and local gut barriers than on skin or airway tools.",
+        goalText: "Use chemical barriers well, then clean up surviving threats before too many spread.",
+        lede: "The invader entered through the digestive route, where stomach acid can be a major early defense.",
+        overlayTitle: "Digestive entry detected",
+        overlayText: "Threat cluster descending toward acidic barrier zones.",
+        overlayMission: "Use location-appropriate chemical defense, then clear survivors.",
+        missionText: "In a digestive entry, stomach acid becomes much stronger. Mucus may help less than in airway scenarios, and sealing skin does nothing here.",
+        adaptiveIntro: "For this swallowed threat, the adaptive response still begins with antigen presentation, then coordinated activation and antibody support.",
+        innateActions: [
+          { id: "stomachAcid", name: "Stomach Acid", desc: "Launch a destructive acid wave.", type: "good" },
+          { id: "deployPhagocytes", name: "Deploy Phagocytes", desc: "Engulf surviving microbes.", type: "good" },
+          { id: "triggerFever", name: "Trigger Fever", desc: "Provides support, not instant cleanup.", type: "neutral" },
+          { id: "mucusTrap", name: "Mucus Trap", desc: "Somewhat useful but not the strongest here.", type: "neutral" },
+          { id: "sealSkin", name: "Skin Barrier", desc: "Wrong route entirely.", type: "bad" },
+          { id: "nkBurst", name: "NK Cell Sweep", desc: "Only matters if infected cells appear later.", type: "neutral" }
+        ],
+        adaptiveOrder: ["dendritic", "helper", "bcell", "cytotoxic"]
+      },
+      {
+        key: "infectedCell",
+        name: "Early Viral Cell Infection",
+        entryRoute: "Already inside host cells",
+        threatType: "Infected-cell viral replication",
+        bestFocus: "NK sweep + phagocytes",
+        pathogenText: "Some virus has already entered host cells, so the problem is no longer just free microbes drifting around.",
+        antigenText: "Fragments from infected cells become important clues. Those clues help dendritic cells and T-cells recognize the threat.",
+        locationText: "When cells are already infected, tools that only target free microbes become less complete. Cell-killing matters more.",
+        goalText: "Control free viral particles, identify infected cells, and stop replication before the infection explodes.",
+        lede: "This run starts later: the virus has already infected some host cells, making cell-targeted defense more important.",
+        overlayTitle: "Cell infection detected",
+        overlayText: "Multiple host cells are already compromised and replicating viral material.",
+        overlayMission: "Use innate cleanup and cell-targeted pressure to prevent explosive spread.",
+        missionText: "Because some cells are already infected, NK-like targeting becomes stronger earlier than usual. Free-microbe control still matters, but not by itself.",
+        adaptiveIntro: "This scenario especially highlights cytotoxic T-cells after helper activation, because infected cells must be targeted directly.",
+        innateActions: [
+          { id: "nkBurst", name: "NK Cell Sweep", desc: "Destroy infected cells quickly.", type: "good" },
+          { id: "deployPhagocytes", name: "Deploy Phagocytes", desc: "Clean free viral particles and debris.", type: "good" },
+          { id: "triggerFever", name: "Trigger Fever", desc: "Supportive slowdown.", type: "neutral" },
+          { id: "mucusTrap", name: "Mucus Trap", desc: "Can help only if free particles remain exposed.", type: "neutral" },
+          { id: "sealSkin", name: "Skin Barrier", desc: "Too late for outer barrier fixes.", type: "bad" },
+          { id: "stomachAcid", name: "Stomach Acid", desc: "Wrong route.", type: "bad" }
+        ],
+        adaptiveOrder: ["dendritic", "helper", "cytotoxic", "bcell"]
+      }
+    ];
+
+    const adaptiveCardsMaster = {
+      dendritic: {
+        title: "Activate Dendritic Cell",
+        text: "Collect antigen pieces and present them to begin the adaptive response bridge.",
+        success: "Correct. Dendritic cells help translate the innate encounter into adaptive targeting."
+      },
+      helper: {
+        title: "Call Helper T-Cells",
+        text: "Coordinate and strengthen the immune response with signaling support.",
+        success: "Correct. Helper T-cells release signals that organize the specialized response."
+      },
+      cytotoxic: {
+        title: "Deploy Cytotoxic T-Cells",
+        text: "Destroy infected cells directly once the response is properly activated.",
+        success: "Correct. Cytotoxic T-cells are key for infected-cell elimination."
+      },
+      bcell: {
+        title: "Activate B-Cells",
+        text: "Prepare plasma-cell differentiation and specific antibody production.",
+        success: "Correct. B-cells lead to antigen-specific antibody support."
+      },
+      antibodiesNow: {
+        title: "Release Antibodies Immediately",
+        text: "Try to skip straight to antibodies.",
+        fail: "Too early. Antibodies usually follow B-cell activation and clonal expansion."
+      },
+      memoryNow: {
+        title: "Store Memory Cells First",
+        text: "Try to save the pattern before the fight is assembled.",
+        fail: "Not yet. Memory follows the response; it does not replace activation."
+      }
+    };
+
+    const bossAbilityData = [
+      {
+        id: "checkpoint",
+        title: "Checkpoint Inhibitor",
+        text: "Reactivates suppressed T-cells when the tumor turns them off.",
+        strongPhases: [2, 3],
+        baseDamage: 18
+      },
+      {
+        id: "cart",
+        title: "CAR-T Strike",
+        text: "Engineered T-cells aggressively target tumor cells.",
+        strongPhases: [3],
+        baseDamage: 22
+      },
+      {
+        id: "mrna",
+        title: "mRNA Cancer Vaccine",
+        text: "Boosts immune recognition of tumor antigens over time.",
+        strongPhases: [1, 2],
+        baseDamage: 14
+      },
+      {
+        id: "precision",
+        title: "Precision Oncology",
+        text: "Targets specific tumor weaknesses with focused attacks.",
+        strongPhases: [1, 2, 3],
+        baseDamage: 16
+      }
+    ];
+
+    const game = {
+      scenario: null,
+      stage: 0,
+      progress: 0,
+      innate: {
+        running: false,
+        entities: [],
+        particles: [],
+        tool: null,
+        defense: 10,
+        threat: 76,
+        used: new Set(),
+        successReady: false,
+        feverTimer: 0,
+        scenarioSolved: false,
+        woundSealed: false,
+        acidPulse: 0,
+        inflammationTimer: 0,
+        mucusZones: [],
+        draggedPhagocyteId: null,
+        waveTime: 0
+      },
+      adaptive: {
+        order: [],
+        stepIndex: 0,
+        completed: false,
+        usedWrong: new Set()
+      },
+      memory: {
+        done: false
+      },
+      boss: {
+        running: false,
+        phase: 1,
+        health: 100,
+        entities: [],
+        particles: [],
+        cooldowns: {},
+        completed: false,
+        checkpointOpen: false,
+        vaccineBoost: 0,
+        time: 0
+      }
+    };
+
+    function setStage(name, progress, scenarioLabel = null) {
+      hudStage.textContent = name;
+      game.progress = progress;
+      hudProgressFill.style.width = progress + "%";
+      hudProgressText.textContent = progress + "%";
+      if (scenarioLabel) {
+        hudScenario.textContent = scenarioLabel;
+      } else if (game.scenario) {
+        hudScenario.textContent = game.scenario.name;
+      }
+    }
+
+    function showScreen(target) {
+      [heroScreen, scenarioScreen, innateScreen, adaptiveScreen, memoryScreen, bossScreen].forEach((el) => {
+        el.classList.add("hidden");
+      });
+      target.classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function randomScenario() {
+      return scenarioPool[Math.floor(Math.random() * scenarioPool.length)];
+    }
+
+    function rerollScenarioPreview() {
+      const s = randomScenario();
+      heroScenarioPreview.textContent = "Scenario preview: " + s.name + ".";
+    }
+
+    function buildStars() {
+      fxLayer.innerHTML = "";
+      for (let i = 0; i < 54; i++) {
+        const star = document.createElement("div");
+        star.className = "star";
+        const size = 3 + Math.random() * 8;
+        star.style.width = size + "px";
+        star.style.height = size + "px";
+        star.style.left = Math.random() * 100 + "%";
+        star.style.top = 85 + Math.random() * 20 + "%";
+        star.style.animationDuration = 10 + Math.random() * 14 + "s";
+        star.style.animationDelay = Math.random() * 18 + "s";
+        fxLayer.appendChild(star);
+      }
+    }
+
+    function buildScenarioScene() {
+      const s = game.scenario;
+      threatScene.innerHTML = '<div class="tissue"></div>';
+
+      if (s.key === "respiratory") {
+        const airway = document.createElement("div");
+        airway.className = "airway";
+        threatScene.appendChild(airway);
+        for (let i = 1; i <= 4; i++) {
+          const line = document.createElement("div");
+          line.className = "cilia-line c" + i;
+          threatScene.appendChild(line);
+        }
+      } else if (s.key === "cut") {
+        ["top", "mid", "low"].forEach((part) => {
+          const layer = document.createElement("div");
+          layer.className = "skin-layer " + part;
+          threatScene.appendChild(layer);
+        });
+        const crack = document.createElement("div");
+        crack.className = "cut-crack";
+        threatScene.appendChild(crack);
+      } else if (s.key === "digestive") {
+        const tube = document.createElement("div");
+        tube.className = "digestive-tube";
+        threatScene.appendChild(tube);
+        const acid = document.createElement("div");
+        acid.className = "acid-pool";
+        threatScene.appendChild(acid);
+      } else if (s.key === "infectedCell") {
+        const grid = document.createElement("div");
+        grid.className = "cell-grid";
+        for (let i = 0; i < 12; i++) {
+          const cell = document.createElement("div");
+          cell.className = "host-cell" + (i === 2 || i === 7 || i === 9 ? " infected" : "");
+          grid.appendChild(cell);
+        }
+        threatScene.appendChild(grid);
+      }
+    }
+
+    function loadScenarioInfo() {
+      const s = game.scenario;
+      scenarioTitle.textContent = s.name;
+      scenarioLede.textContent = s.lede;
+      scenarioPathogenText.textContent = s.pathogenText;
+      scenarioAntigenText.textContent = s.antigenText;
+      scenarioLocationText.textContent = s.locationText;
+      scenarioGoalText.textContent = s.goalText;
+      scenarioOverlayTitle.textContent = s.overlayTitle;
+      scenarioOverlayText.textContent = s.overlayText;
+      scenarioOverlayMission.textContent = s.overlayMission;
+      entryRouteText.textContent = s.entryRoute;
+      threatTypeText.textContent = s.threatType;
+      bestFocusText.textContent = s.bestFocus;
+      buildScenarioScene();
+    }
+
+    function chooseScenario(force = false) {
+      game.scenario = randomScenario();
+      if (force) {
+        heroScenarioPreview.textContent = "Scenario preview: " + game.scenario.name + ".";
+      }
+    }
+
+    function resetInnateStage() {
+      const s = game.scenario;
+      game.innate.entities = [];
+      game.innate.particles = [];
+      game.innate.mucusZones = [];
+      game.innate.tool = null;
+      game.innate.used = new Set();
+      game.innate.defense = 10;
+      game.innate.threat = 76;
+      game.innate.successReady = false;
+      game.innate.scenarioSolved = false;
+      game.innate.feverTimer = 0;
+      game.innate.woundSealed = false;
+      game.innate.acidPulse = 0;
+      game.innate.inflammationTimer = 0;
+      game.innate.waveTime = 0;
+      game.innate.draggedPhagocyteId = null;
+      responseText.textContent = "Choose an action. Some will fit this scenario very well. Others will be weak or mistimed.";
+      logList.innerHTML = "";
+      toAdaptiveBtn.classList.add("hidden");
+      addLog("Innate defense arena initialized.", "warn");
+
+      for (let i = 0; i < 16; i++) {
+        if (s.key === "infectedCell") {
+          const infected = i < 4;
+          game.innate.entities.push({
+            id: "microbe_" + i,
+            type: infected ? "infectedCell" : "virus",
+            x: 140 + Math.random() * 670,
+            y: 110 + Math.random() * 420,
+            vx: (Math.random() - 0.5) * 0.8,
+            vy: (Math.random() - 0.5) * 0.8,
+            r: infected ? 18 : 10,
+            alive: true,
+            trapped: false,
+            hp: infected ? 2 : 1,
+            pulse: Math.random() * Math.PI * 2
+          });
+        } else if (s.key === "cut") {
+          game.innate.entities.push({
+            id: "microbe_" + i,
+            type: "bacteria",
+            x: 465 + (Math.random() - 0.5) * 42,
+            y: 90 + Math.random() * 440,
+            vx: (Math.random() - 0.5) * 1.1,
+            vy: Math.random() * 1.3,
+            r: 10,
+            alive: true,
+            trapped: false,
+            hp: 1,
+            pulse: Math.random() * Math.PI * 2
+          });
+        } else if (s.key === "digestive") {
+          game.innate.entities.push({
+            id: "microbe_" + i,
+            type: "digestive",
+            x: 180 + Math.random() * 600,
+            y: 80 + Math.random() * 380,
+            vx: (Math.random() - 0.5) * 0.9,
+            vy: 0.6 + Math.random() * 0.7,
+            r: 11,
+            alive: true,
+            trapped: false,
+            hp: 1,
+            pulse: Math.random() * Math.PI * 2
+          });
+        } else {
+          game.innate.entities.push({
+            id: "microbe_" + i,
+            type: "virus",
+            x: 120 + Math.random() * 720,
+            y: 110 + Math.random() * 420,
+            vx: (Math.random() - 0.5) * 1.2,
+            vy: (Math.random() - 0.5) * 1.2,
+            r: 10,
+            alive: true,
+            trapped: false,
+            hp: 1,
+            pulse: Math.random() * Math.PI * 2
+          });
+        }
+      }
+
+      missionText.textContent = s.missionText;
+      buildActionButtons();
+      updateInnateMeters();
+    }
+
+    function shuffled(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function buildActionButtons() {
+      actionGrid.innerHTML = "";
+      toolChipRow.innerHTML = "";
+      const actions = shuffled(game.scenario.innateActions);
+
+      actions.forEach((action) => {
+        const chip = document.createElement("div");
+        chip.className = "tool-chip";
+        chip.id = "chip_" + action.id;
+        chip.textContent = action.name;
+        toolChipRow.appendChild(chip);
+
+        const btn = document.createElement("button");
+        btn.className = "action-btn";
+        btn.innerHTML = `
+          <span class="name">${action.name}</span>
+          <span class="desc">${action.desc}</span>
+        `;
+        btn.addEventListener("click", () => useInnateAction(action));
+        actionGrid.appendChild(btn);
+      });
+    }
+
+    function setActiveTool(actionId, label) {
+      game.innate.tool = actionId;
+      activeToolLabel.textContent = label;
+      document.querySelectorAll(".tool-chip").forEach((chip) => chip.classList.remove("active"));
+      const chip = document.getElementById("chip_" + actionId);
+      if (chip) chip.classList.add("active");
+    }
+
+    function addLog(text, type = "warn") {
+      const div = document.createElement("div");
+      div.className = "log-entry " + type;
+      div.textContent = text;
+      logList.prepend(div);
+      while (logList.children.length > 7) {
+        logList.removeChild(logList.lastChild);
+      }
+    }
+
+    function addAdaptiveLog(text, type = "warn") {
+      const div = document.createElement("div");
+      div.className = "log-entry " + type;
+      div.textContent = text;
+      adaptiveLogList.prepend(div);
+      while (adaptiveLogList.children.length > 7) {
+        adaptiveLogList.removeChild(adaptiveLogList.lastChild);
+      }
+    }
+
+    function addMemoryLog(text, type = "warn") {
+      const div = document.createElement("div");
+      div.className = "log-entry " + type;
+      div.textContent = text;
+      memoryLogList.prepend(div);
+      while (memoryLogList.children.length > 6) {
+        memoryLogList.removeChild(memoryLogList.lastChild);
+      }
+    }
+
+    function addBossLog(text, type = "warn") {
+      const div = document.createElement("div");
+      div.className = "log-entry " + type;
+      div.textContent = text;
+      bossLogList.prepend(div);
+      while (bossLogList.children.length > 7) {
+        bossLogList.removeChild(bossLogList.lastChild);
+      }
+    }
+
+    function useInnateAction(action) {
+      setActiveTool(action.id, action.name);
+
+      if (game.innate.used.has(action.id) && action.id !== "deployPhagocytes" && action.id !== "mucusTrap") {
+        responseText.textContent = "That response was already triggered. Reusing it now would add little new effect.";
+        addLog(action.name + " was already used.", "warn");
+        return;
+      }
+
+      if (action.id !== "deployPhagocytes" && action.id !== "mucusTrap") {
+        game.innate.used.add(action.id);
+      }
+
+      if (action.id === "deployPhagocytes") {
+        spawnPhagocytes(4);
+        responseText.textContent = "Phagocytes deployed. Drag the cyan immune cells onto microbes to engulf them.";
+        addLog("Phagocytes deployed to the arena.", "good");
+      } else if (action.id === "mucusTrap") {
+        responseText.textContent = "Mucus trap armed. Click the arena to place sticky zones that trap nearby microbes.";
+        addLog("Mucus trap ready. Place zones strategically.", action.type === "good" ? "good" : "bad");
+      } else if (action.id === "sealClot") {
+        if (game.scenario.key === "cut") {
+          game.innate.woundSealed = true;
+          game.innate.defense += 16;
+          game.innate.threat -= 8;
+          addLog("The wound begins sealing, reducing new bacterial entry.", "good");
+          responseText.textContent = "Excellent for a cut. Sealing the breach reduces new microbes entering the tissue.";
+        } else {
+          game.innate.defense += 1;
+          addLog("Clotting does not help this location much.", "bad");
+          responseText.textContent = "This is not the main problem in this scenario. The entry route is elsewhere.";
+        }
+      } else if (action.id === "sealSkin") {
+        if (game.scenario.key === "cut") {
+          game.innate.defense += 8;
+          game.innate.threat -= 4;
+          addLog("Barrier support helps the damaged skin route.", "good");
+          responseText.textContent = "Barrier reinforcement helps, though it is strongest before the breach grows.";
+        } else {
+          game.innate.defense += 1;
+          addLog("Skin barrier is too late or wrong-location here.", "bad");
+          responseText.textContent = "A strong barrier matters before entry, but not much after this route is already breached.";
+        }
+      } else if (action.id === "triggerFever") {
+        game.innate.feverTimer = 500;
+        game.innate.defense += 7;
+        game.innate.threat -= 5;
+        addLog("Body temperature rises. Microbes slow somewhat.", "warn");
+        responseText.textContent = "Fever helps support the fight, but it does not replace location-specific defenses.";
+      } else if (action.id === "triggerInflammation") {
+        game.innate.inflammationTimer = 450;
+        game.innate.defense += 10;
+        game.innate.threat -= 6;
+        addLog("Inflammation recruits more local pressure.", "warn");
+        responseText.textContent = "Inflammation increases local defense and signaling, but can also mean swelling and discomfort.";
+      } else if (action.id === "stomachAcid") {
+        if (game.scenario.key === "digestive") {
+          game.innate.acidPulse = 260;
+          game.innate.defense += 16;
+          game.innate.threat -= 14;
+          addLog("Acid barrier surges through the digestive route.", "good");
+          responseText.textContent = "Strong choice here. Digestive acid can destroy or weaken many swallowed pathogens.";
+        } else {
+          game.innate.acidPulse = 140;
+          game.innate.defense += 2;
+          game.innate.threat -= 2;
+          addLog("Acid is powerful in the wrong place.", "warn");
+          responseText.textContent = "This defense is real, but mostly relevant in the digestive tract.";
+        }
+      } else if (action.id === "nkBurst") {
+        if (game.scenario.key === "infectedCell" || game.scenario.key === "respiratory") {
+          nkCellSweep();
+          game.innate.defense += 12;
+          game.innate.threat -= 10;
+          addLog("NK cells sweep for infected cells.", "good");
+          responseText.textContent = "Strong when infected cells are present. NK cells can kill compromised host cells.";
+        } else {
+          game.innate.defense += 2;
+          game.innate.threat -= 1;
+          addLog("No major infected-cell target was available.", "warn");
+          responseText.textContent = "NK cells matter most when infected or abnormal body cells are already present.";
+        }
+      }
+
+      updateInnateMeters();
+      checkInnateSuccess();
+    }
+
+    function spawnPhagocytes(count) {
+      let current = game.innate.entities.filter((e) => e.type === "phagocyte" && e.alive).length;
+      for (let i = 0; i < count; i++) {
+        game.innate.entities.push({
+          id: "phagocyte_" + current + "_" + i + "_" + Math.random(),
+          type: "phagocyte",
+          x: 180 + Math.random() * 580,
+          y: 120 + Math.random() * 380,
+          vx: 0,
+          vy: 0,
+          r: 15,
+          alive: true,
+          trapped: false,
+          hp: 1,
+          pulse: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    function nkCellSweep() {
+      let hits = 0;
+      game.innate.entities.forEach((e) => {
+        if (!e.alive) return;
+        if (e.type === "infectedCell" || (game.scenario.key === "respiratory" && e.type === "virus" && Math.random() < 0.22)) {
+          e.hp -= 1;
+          makePulse(e.x, e.y, "#ff5f88", 22);
+          if (e.hp <= 0) {
+            e.alive = false;
+            hits++;
+            burst(e.x, e.y, "#ff7c9d", 14);
+          }
+        }
+      });
+      if (hits === 0) {
+        addLog("NK sweep found few ideal targets.", "warn");
+      }
+    }
+
+    function updateInnateMeters() {
+      game.innate.defense = Math.max(0, Math.min(100, game.innate.defense));
+      game.innate.threat = Math.max(0, Math.min(100, game.innate.threat));
+
+      threatFill.style.width = game.innate.threat + "%";
+      defenseFill.style.width = game.innate.defense + "%";
+      threatLabel.textContent = Math.round(game.innate.threat) + "%";
+      defenseLabel.textContent = Math.round(game.innate.defense) + "%";
+    }
+
+    function checkInnateSuccess() {
+      const aliveThreats = game.innate.entities.filter((e) =>
+        e.alive && (e.type === "virus" || e.type === "bacteria" || e.type === "digestive" || e.type === "infectedCell")
+      ).length;
+
+      if ((game.innate.defense >= 58 || game.innate.threat <= 34 || aliveThreats <= 5) && !game.innate.successReady) {
+        game.innate.successReady = true;
+        toAdaptiveBtn.classList.remove("hidden");
+        addLog("Innate system bought enough time. Adaptive response can now activate.", "good");
+        responseText.textContent = "The body has stabilized the situation enough to begin specialized targeting.";
+      }
+    }
+
+    function createParticle(x, y, color, size, life, vx, vy) {
+      game.innate.particles.push({ x, y, color, size, life, maxLife: life, vx, vy });
+    }
+
+    function burst(x, y, color, amount = 10) {
+      for (let i = 0; i < amount; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const speed = 1 + Math.random() * 2.8;
+        createParticle(x, y, color, 2 + Math.random() * 4, 30 + Math.random() * 16, Math.cos(a) * speed, Math.sin(a) * speed);
+      }
+    }
+
+    function makePulse(x, y, color, radius) {
+      for (let i = 0; i < 12; i++) {
+        const a = (Math.PI * 2 * i) / 12;
+        createParticle(x + Math.cos(a) * 8, y + Math.sin(a) * 8, color, 3, 26, Math.cos(a) * 1.8, Math.sin(a) * 1.8);
+      }
+    }
+
+    function innateCanvasPos(evt) {
+      const rect = arenaCanvas.getBoundingClientRect();
+      const sx = arenaCanvas.width / rect.width;
+      const sy = arenaCanvas.height / rect.height;
+      return {
+        x: (evt.clientX - rect.left) * sx,
+        y: (evt.clientY - rect.top) * sy
+      };
+    }
+
+    arenaCanvas.addEventListener("mousedown", (evt) => {
+      if (innateScreen.classList.contains("hidden")) return;
+      const p = innateCanvasPos(evt);
+
+      const phagocyte = game.innate.entities.find((e) => e.alive && e.type === "phagocyte" && dist(e.x, e.y, p.x, p.y) <= e.r + 8);
+      if (phagocyte) {
+        game.innate.draggedPhagocyteId = phagocyte.id;
+        return;
+      }
+
+      if (game.innate.tool === "mucusTrap") {
+        placeMucusZone(p.x, p.y);
+      }
+    });
+
+    arenaCanvas.addEventListener("mousemove", (evt) => {
+      if (!game.innate.draggedPhagocyteId) return;
+      const p = innateCanvasPos(evt);
+      const target = game.innate.entities.find((e) => e.id === game.innate.draggedPhagocyteId && e.alive);
+      if (target) {
+        target.x = p.x;
+        target.y = p.y;
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      game.innate.draggedPhagocyteId = null;
+    });
+
+    function placeMucusZone(x, y) {
+      game.innate.mucusZones.push({ x, y, r: 66, life: 520 });
+      game.innate.used.add("mucusTrap");
+
+      if (game.scenario.key === "respiratory") {
+        game.innate.defense += 9;
+        game.innate.threat -= 7;
+        addLog("Sticky mucus zone deployed in the airway.", "good");
+        responseText.textContent = "Strong airway defense. Microbes caught in mucus will slow dramatically.";
+      } else {
+        game.innate.defense += 2;
+        game.innate.threat -= 1;
+        addLog("Mucus zone placed, but this route is not ideal for it.", "bad");
+        responseText.textContent = "Mucus exists in some locations, but this is not the strongest match for the scenario.";
+      }
+
+      updateInnateMeters();
+      checkInnateSuccess();
+    }
+
+    function drawArenaBackground() {
+      const s = game.scenario.key;
+      if (s === "respiratory") {
+        const g = arenaCtx.createLinearGradient(0, 0, 0, arenaCanvas.height);
+        g.addColorStop(0, "rgba(34, 58, 112, 0.9)");
+        g.addColorStop(1, "rgba(10, 16, 36, 0.98)");
+        arenaCtx.fillStyle = g;
+        arenaCtx.fillRect(0, 0, arenaCanvas.width, arenaCanvas.height);
+
+        arenaCtx.strokeStyle = "rgba(129, 246, 255, 0.16)";
+        arenaCtx.lineWidth = 2;
+        roundRect(arenaCtx, 76, 72, 808, 516, 70, false, true);
+
+        for (let i = 0; i < 5; i++) {
+          arenaCtx.fillStyle = "rgba(129, 246, 255, 0.08)";
+          arenaCtx.fillRect(110, 120 + i * 92 + Math.sin(game.innate.waveTime * 0.04 + i) * 8, 740, 12);
+        }
+      } else if (s === "cut") {
+        const g = arenaCtx.createLinearGradient(0, 0, 0, arenaCanvas.height);
+        g.addColorStop(0, "rgba(82, 41, 46, 0.95)");
+        g.addColorStop(0.4, "rgba(135, 61, 77, 0.62)");
+        g.addColorStop(1, "rgba(29, 11, 24, 0.98)");
+        arenaCtx.fillStyle = g;
+        arenaCtx.fillRect(0, 0, arenaCanvas.width, arenaCanvas.height);
+
+        arenaCtx.fillStyle = "rgba(255, 193, 151, 0.18)";
+        roundRect(arenaCtx, 70, 74, 820, 140, 24, true, false);
+        arenaCtx.fillStyle = "rgba(255, 96, 126, 0.10)";
+        roundRect(arenaCtx, 70, 234, 820, 160, 24, true, false);
+        arenaCtx.fillStyle = "rgba(115, 35, 56, 0.18)";
+        roundRect(arenaCtx, 70, 414, 820, 160, 24, true, false);
+
+        arenaCtx.fillStyle = game.innate.woundSealed ? "rgba(54, 215, 145, 0.68)" : "rgba(255, 66, 102, 0.8)";
+        roundRect(arenaCtx, 455, 92, 50, 440, 18, true, false);
+
+        if (!game.innate.woundSealed) {
+          arenaCtx.fillStyle = "rgba(255, 178, 178, 0.22)";
+          roundRect(arenaCtx, 445, 92, 10, 440, 999, true, false);
+          roundRect(arenaCtx, 505, 92, 10, 440, 999, true, false);
+        }
+      } else if (s === "digestive") {
+        const g = arenaCtx.createLinearGradient(0, 0, 0, arenaCanvas.height);
+        g.addColorStop(0, "rgba(73, 41, 17, 0.95)");
+        g.addColorStop(1, "rgba(16, 10, 5, 0.98)");
+        arenaCtx.fillStyle = g;
+        arenaCtx.fillRect(0, 0, arenaCanvas.width, arenaCanvas.height);
+
+        arenaCtx.strokeStyle = "rgba(255, 176, 74, 0.18)";
+        arenaCtx.lineWidth = 3;
+        roundRect(arenaCtx, 90, 70, 780, 500, 72, false, true);
+
+        arenaCtx.fillStyle = "rgba(255, 166, 64, 0.12)";
+        roundRect(arenaCtx, 145, 420, 670, 120, 46, true, false);
+
+        if (game.innate.acidPulse > 0) {
+          const alpha = Math.min(0.34, game.innate.acidPulse / 260 * 0.34);
+          arenaCtx.fillStyle = "rgba(255, 213, 84," + alpha + ")";
+          roundRect(arenaCtx, 135, 400, 690, 140, 58, true, false);
+        }
+      } else if (s === "infectedCell") {
+        const g = arenaCtx.createLinearGradient(0, 0, 0, arenaCanvas.height);
+        g.addColorStop(0, "rgba(22, 27, 58, 0.98)");
+        g.addColorStop(1, "rgba(9, 10, 26, 0.98)");
+        arenaCtx.fillStyle = g;
+        arenaCtx.fillRect(0, 0, arenaCanvas.width, arenaCanvas.height);
+
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 4; col++) {
+            const x = 155 + col * 170;
+            const y = 130 + row * 160;
+            arenaCtx.fillStyle = "rgba(108, 146, 255, 0.08)";
+            circle(arenaCtx, x, y, 52, true, false);
+            arenaCtx.strokeStyle = "rgba(129, 246, 255, 0.12)";
+            arenaCtx.lineWidth = 2;
+            circle(arenaCtx, x, y, 52, false, true);
+          }
+        }
+      }
+
+      if (game.innate.feverTimer > 0) {
+        const alpha = Math.min(0.18, game.innate.feverTimer / 500 * 0.18);
+        arenaCtx.fillStyle = "rgba(255, 102, 66," + alpha + ")";
+        arenaCtx.fillRect(0, 0, arenaCanvas.width, arenaCanvas.height);
+      }
+
+      if (game.innate.inflammationTimer > 0) {
+        const alpha = Math.min(0.12, game.innate.inflammationTimer / 450 * 0.12);
+        arenaCtx.fillStyle = "rgba(255, 77, 104," + alpha + ")";
+        arenaCtx.fillRect(0, 0, arenaCanvas.width, arenaCanvas.height);
+      }
+
+      game.innate.mucusZones.forEach((zone) => {
+        const alpha = Math.min(0.34, zone.life / 520 * 0.28 + 0.06);
+        arenaCtx.fillStyle = "rgba(129, 246, 255," + alpha + ")";
+        circle(arenaCtx, zone.x, zone.y, zone.r, true, false);
+        arenaCtx.strokeStyle = "rgba(129, 246, 255, 0.24)";
+        circle(arenaCtx, zone.x, zone.y, zone.r, false, true);
+      });
+    }
+
+    function drawEntity(e) {
+      if (!e.alive) return;
+
+      if (e.type === "virus") {
+        arenaCtx.save();
+        arenaCtx.translate(e.x, e.y);
+        arenaCtx.rotate(e.pulse * 0.05);
+        arenaCtx.fillStyle = "rgba(255, 84, 112, 0.9)";
+        circle(arenaCtx, 0, 0, e.r, true, false);
+        arenaCtx.strokeStyle = "rgba(255, 205, 214, 0.65)";
+        arenaCtx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+          const a = (Math.PI * 2 * i) / 8;
+          arenaCtx.beginPath();
+          arenaCtx.moveTo(Math.cos(a) * (e.r - 2), Math.sin(a) * (e.r - 2));
+          arenaCtx.lineTo(Math.cos(a) * (e.r + 8), Math.sin(a) * (e.r + 8));
+          arenaCtx.stroke();
+        }
+        arenaCtx.restore();
+      } else if (e.type === "bacteria" || e.type === "digestive") {
+        arenaCtx.save();
+        arenaCtx.translate(e.x, e.y);
+        arenaCtx.rotate(Math.sin(e.pulse) * 0.25);
+        arenaCtx.fillStyle = e.type === "digestive" ? "rgba(255, 176, 86, 0.9)" : "rgba(255, 112, 88, 0.92)";
+        roundRect(arenaCtx, -e.r * 1.4, -e.r * 0.7, e.r * 2.8, e.r * 1.4, 999, true, false);
+        arenaCtx.strokeStyle = "rgba(255,255,255,0.22)";
+        arenaCtx.stroke();
+        arenaCtx.restore();
+      } else if (e.type === "infectedCell") {
+        arenaCtx.fillStyle = "rgba(255, 80, 112, 0.18)";
+        circle(arenaCtx, e.x, e.y, e.r + 6, true, false);
+        arenaCtx.fillStyle = "rgba(255, 93, 126, 0.9)";
+        circle(arenaCtx, e.x, e.y, e.r, true, false);
+        arenaCtx.fillStyle = "rgba(255, 210, 220, 0.75)";
+        circle(arenaCtx, e.x + Math.sin(e.pulse) * 2, e.y + Math.cos(e.pulse) * 2, e.r * 0.42, true, false);
+      } else if (e.type === "phagocyte") {
+        arenaCtx.fillStyle = "rgba(129, 246, 255, 0.22)";
+        circle(arenaCtx, e.x, e.y, e.r + 8, true, false);
+        arenaCtx.fillStyle = "rgba(94, 225, 255, 0.92)";
+        circle(arenaCtx, e.x, e.y, e.r, true, false);
+        arenaCtx.strokeStyle = "rgba(255,255,255,0.36)";
+        arenaCtx.lineWidth = 2;
+        circle(arenaCtx, e.x + 3, e.y - 2, e.r * 0.42, false, true);
+      }
+    }
+
+    function drawInnateParticles() {
+      game.innate.particles.forEach((p) => {
+        arenaCtx.globalAlpha = Math.max(0, p.life / p.maxLife);
+        arenaCtx.fillStyle = p.color;
+        circle(arenaCtx, p.x, p.y, p.size, true, false);
+      });
+      arenaCtx.globalAlpha = 1;
+    }
+
+    function updateInnateArena() {
+      if (innateScreen.classList.contains("hidden")) return;
+
+      game.innate.waveTime += 1;
+
+      if (game.innate.feverTimer > 0) {
+        game.innate.feverTimer--;
+      }
+      if (game.innate.acidPulse > 0) {
+        game.innate.acidPulse--;
+      }
+      if (game.innate.inflammationTimer > 0) {
+        game.innate.inflammationTimer--;
+      }
+
+      game.innate.mucusZones.forEach((zone) => {
+        zone.life--;
+      });
+      game.innate.mucusZones = game.innate.mucusZones.filter((z) => z.life > 0);
+
+      game.innate.entities.forEach((e) => {
+        if (!e.alive) return;
+
+        e.pulse += 0.08;
+
+        if (e.type === "virus" || e.type === "bacteria" || e.type === "digestive" || e.type === "infectedCell") {
+          let speedFactor = 1;
+          if (game.innate.feverTimer > 0) speedFactor *= 0.72;
+          if (game.innate.inflammationTimer > 0 && (e.type === "bacteria" || e.type === "digestive")) speedFactor *= 0.86;
+
+          e.x += e.vx * speedFactor;
+          e.y += e.vy * speedFactor;
+
+          if (e.type === "bacteria" && !game.innate.woundSealed && e.y < 540) {
+            e.y += 0.45;
+          }
+
+          if (e.type === "digestive") {
+            e.y += 0.18;
+          }
+
+          if (e.x < 90 || e.x > arenaCanvas.width - 90) e.vx *= -1;
+          if (e.y < 80 || e.y > arenaCanvas.height - 80) e.vy *= -1;
+
+          e.trapped = false;
+
+          game.innate.mucusZones.forEach((zone) => {
+            if (dist(e.x, e.y, zone.x, zone.y) < zone.r + e.r) {
+              e.trapped = true;
+              e.vx *= 0.94;
+              e.vy *= 0.94;
+              e.x += (zone.x - e.x) * 0.04;
+              e.y += (zone.y - e.y) * 0.04;
+              createParticle(e.x, e.y, "rgba(129,246,255,0.7)", 2, 18, 0, -0.4);
+            }
+          });
+
+          if (game.innate.acidPulse > 0 && game.scenario.key === "digestive" && e.y > 390) {
+            if (Math.random() < 0.03) {
+              e.alive = false;
+              game.innate.threat -= 0.7;
+              burst(e.x, e.y, "rgba(255, 210, 90, 0.9)", 10);
+            }
+          }
+
+          if (e.type === "infectedCell" && Math.random() < 0.0022) {
+            game.innate.entities.push({
+              id: "virus_spawn_" + Math.random(),
+              type: "virus",
+              x: e.x + (Math.random() - 0.5) * 26,
+              y: e.y + (Math.random() - 0.5) * 26,
+              vx: (Math.random() - 0.5) * 1.2,
+              vy: (Math.random() - 0.5) * 1.2,
+              r: 8,
+              alive: true,
+              trapped: false,
+              hp: 1,
+              pulse: 0
+            });
+            game.innate.threat += 0.35;
+          }
+        } else if (e.type === "phagocyte") {
+          if (game.innate.draggedPhagocyteId !== e.id) {
+            const nearest = nearestThreat(e.x, e.y);
+            if (nearest && dist(e.x, e.y, nearest.x, nearest.y) < 180) {
+              const dx = nearest.x - e.x;
+              const dy = nearest.y - e.y;
+              const d = Math.max(1, Math.hypot(dx, dy));
+              e.x += dx / d * 1.8;
+              e.y += dy / d * 1.8;
+            }
+          }
+
+          const target = nearestThreat(e.x, e.y, 22);
+          if (target) {
+            target.hp -= 1;
+            makePulse(target.x, target.y, "rgba(129,246,255,0.95)", 16);
+            if (target.hp <= 0) {
+              target.alive = false;
+              burst(target.x, target.y, "rgba(129,246,255,0.95)", 12);
+              game.innate.defense += 1.2;
+              game.innate.threat -= 2.3;
+            }
+          }
+        }
+      });
+
+      if (game.scenario.key === "cut" && !game.innate.woundSealed && Math.random() < 0.02) {
+        game.innate.entities.push({
+          id: "new_bacteria_" + Math.random(),
+          type: "bacteria",
+          x: 480 + (Math.random() - 0.5) * 34,
+          y: 92 + Math.random() * 110,
+          vx: (Math.random() - 0.5) * 1.2,
+          vy: 0.6 + Math.random() * 1.1,
+          r: 10,
+          alive: true,
+          trapped: false,
+          hp: 1,
+          pulse: Math.random() * Math.PI * 2
+        });
+        game.innate.threat += 0.45;
+      }
+
+      game.innate.particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+      });
+      game.innate.particles = game.innate.particles.filter((p) => p.life > 0);
+
+      const aliveThreats = game.innate.entities.filter((e) => e.alive && (e.type !== "phagocyte")).length;
+      if (aliveThreats > 0) {
+        game.innate.threat += 0.008 * aliveThreats;
+      }
+
+      updateInnateMeters();
+      checkInnateSuccess();
+
+      arenaCtx.clearRect(0, 0, arenaCanvas.width, arenaCanvas.height);
+      drawArenaBackground();
+
+      game.innate.entities.forEach(drawEntity);
+      drawInnateParticles();
+    }
+
+    function nearestThreat(x, y, range = Infinity) {
+      let best = null;
+      let bestD = range;
+      game.innate.entities.forEach((e) => {
+        if (!e.alive) return;
+        if (e.type === "phagocyte") return;
+        const d = dist(x, y, e.x, e.y);
+        if (d < bestD) {
+          bestD = d;
+          best = e;
+        }
+      });
+      return best;
+    }
+
+    function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    function circle(ctx, x, y, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    function dist(x1, y1, x2, y2) {
+      return Math.hypot(x2 - x1, y2 - y1);
+    }
+
+    function resetAdaptiveStage() {
+      game.adaptive.order = game.scenario.adaptiveOrder;
+      game.adaptive.stepIndex = 0;
+      game.adaptive.completed = false;
+      game.adaptive.usedWrong = new Set();
+
+      adaptiveResponseText.textContent = "Choose a card to start assembling the correct response.";
+      adaptiveLogList.innerHTML = "";
+      toMemoryBtn.classList.add("hidden");
+      adaptiveIntroText.textContent = game.scenario.adaptiveIntro;
+
+      sequenceCards.innerHTML = "";
+      sequenceTrack.querySelectorAll(".sequence-slot").forEach((slot, idx) => {
+        slot.textContent = "Step " + (idx + 1) + ": Awaiting correct activation.";
+        slot.classList.remove("filled");
+      });
+
+      const ids = shuffled([...game.scenario.adaptiveOrder, "antibodiesNow", "memoryNow"]);
+      ids.forEach((id) => {
+        const data = adaptiveCardsMaster[id];
+        const card = document.createElement("div");
+        card.className = "sequence-card";
+        card.innerHTML = `
+          <h4>${data.title}</h4>
+          <p>${data.text}</p>
+        `;
+        card.addEventListener("click", () => chooseAdaptiveCard(id, card));
+        sequenceCards.appendChild(card);
+      });
+
+      addAdaptiveLog("Adaptive system ready. Correct order required.", "warn");
+    }
+
+    function chooseAdaptiveCard(id, cardEl) {
+      if (game.adaptive.completed) return;
+
+      const needed = game.adaptive.order[game.adaptive.stepIndex];
+      const slot = sequenceTrack.querySelector('[data-slot="' + game.adaptive.stepIndex + '"]');
+
+      if (id === needed) {
+        const data = adaptiveCardsMaster[id];
+        slot.textContent = "Step " + (game.adaptive.stepIndex + 1) + ": " + data.title;
+        slot.classList.add("filled");
+        adaptiveResponseText.textContent = data.success;
+        addAdaptiveLog(data.success, "good");
+        cardEl.style.borderColor = "rgba(121,242,180,0.38)";
+        cardEl.style.background = "rgba(121,242,180,0.08)";
+        game.adaptive.stepIndex++;
+
+        if (game.adaptive.stepIndex >= game.adaptive.order.length) {
+          game.adaptive.completed = true;
+          adaptiveResponseText.textContent = "Adaptive response assembled successfully. The body now has specialized targeting and antibody support.";
+          addAdaptiveLog("Stage 3 complete: adaptive targeting fully assembled.", "good");
+          toMemoryBtn.classList.remove("hidden");
+        }
+      } else {
+        const failText = adaptiveCardsMaster[id].fail || "That step is not correct yet. The adaptive response is sequence-sensitive.";
+        adaptiveResponseText.textContent = failText;
+        addAdaptiveLog(failText, "bad");
+        cardEl.style.borderColor = "rgba(255,100,126,0.32)";
+        cardEl.style.background = "rgba(255,100,126,0.08)";
+      }
+    }
+
+    function resetMemoryStage() {
+      game.memory.done = false;
+      memoryResultBox.textContent = "Memory cells are standing by. Trigger the second exposure to compare the response.";
+      memoryLogList.innerHTML = "";
+      toBossBtn.classList.add("hidden");
+      addMemoryLog("First exposure has ended. Memory formation begins.", "warn");
+    }
+
+    function triggerMemoryBurst() {
+      if (game.memory.done) return;
+      game.memory.done = true;
+      memoryResultBox.innerHTML = `
+        <strong>Second exposure result:</strong><br><br>
+        Recognition is dramatically faster. Matching immune cells are already stored, antibody production accelerates,
+        and the same pathogen is controlled before it can build as much momentum.
+      `;
+      addMemoryLog("Memory cells recognized the pathogen almost immediately.", "good");
+      addMemoryLog("Antibody response became much faster on second exposure.", "good");
+      addMemoryLog("This is the basis of long-term immunity and vaccination logic.", "good");
+      toBossBtn.classList.remove("hidden");
+    }
+
+    function resetBossStage() {
+      game.boss.running = true;
+      game.boss.phase = 1;
+      game.boss.health = 100;
+      game.boss.entities = [];
+      game.boss.particles = [];
+      game.boss.cooldowns = {
+        checkpoint: 0,
+        cart: 0,
+        mrna: 0,
+        precision: 0
+      };
+      game.boss.completed = false;
+      game.boss.checkpointOpen = false;
+      game.boss.vaccineBoost = 0;
+      game.boss.time = 0;
+      bossResponseText.textContent = "Choose an ability. Some are strongest at specific phases of the boss fight.";
+      bossLogList.innerHTML = "";
+      restartCampaignBtn.classList.add("hidden");
+      buildBossAbilities();
+      updateBossUI();
+      addBossLog("Tumor detected. Initial phase: uncontrolled growth.", "warn");
+
+      for (let i = 0; i < 8; i++) {
+        game.boss.entities.push({
+          type: "immuneOrb",
+          x: 180 + Math.random() * 600,
+          y: 420 + Math.random() * 120,
+          vx: (Math.random() - 0.5) * 0.8,
+          vy: (Math.random() - 0.5) * 0.8,
+          r: 10
+        });
+      }
+    }
+
+    function buildBossAbilities() {
+      bossAbilities.innerHTML = "";
+      const shuffledAbilities = shuffled(bossAbilityData);
+      shuffledAbilities.forEach((a) => {
+        const card = document.createElement("div");
+        card.className = "ability-card ready";
+        card.dataset.id = a.id;
+        card.innerHTML = `
+          <h4>${a.title}</h4>
+          <p>${a.text}</p>
+        `;
+        card.addEventListener("click", () => useBossAbility(a, card));
+        bossAbilities.appendChild(card);
+      });
+    }
+
+    function useBossAbility(ability, cardEl) {
+      if (game.boss.completed) return;
+      if (game.boss.cooldowns[ability.id] > 0) {
+        bossResponseText.textContent = ability.title + " is recharging.";
+        addBossLog(ability.title + " is still on cooldown.", "warn");
+        return;
+      }
+
+      let damage = ability.baseDamage;
+      if (ability.strongPhases.includes(game.boss.phase)) {
+        damage += 10;
+      }
+
+      if (ability.id === "checkpoint") {
+        if (game.boss.phase >= 2) {
+          game.boss.checkpointOpen = true;
+          damage += 8;
+          bossResponseText.textContent = "Checkpoint inhibitor reactivated suppressed T-cells. The tumor's immune evasion weakened.";
+          addBossLog("Checkpoint pathway disrupted. T-cells reactivated.", "good");
+        } else {
+          bossResponseText.textContent = "Useful later too, but the tumor has not fully deployed checkpoint suppression yet.";
+          addBossLog("Checkpoint inhibitor used early. Some effect, but not peak value.", "warn");
+        }
+        game.boss.cooldowns[ability.id] = 260;
+      } else if (ability.id === "cart") {
+        if (game.boss.checkpointOpen || game.boss.phase === 3) {
+          damage += 10;
+          bossResponseText.textContent = "CAR-T cells surged into the tumor after immune suppression weakened.";
+          addBossLog("CAR-T assault hit exposed tumor cells hard.", "good");
+        } else {
+          damage -= 4;
+          bossResponseText.textContent = "CAR-T cells attacked, but checkpoint suppression reduced the full impact.";
+          addBossLog("CAR-T pressure applied, but tumor suppression limited effectiveness.", "warn");
+        }
+        game.boss.cooldowns[ability.id] = 320;
+      } else if (ability.id === "mrna") {
+        game.boss.vaccineBoost += 0.6;
+        bossResponseText.textContent = "mRNA vaccine signaling increased immune recognition of tumor antigens.";
+        addBossLog("Immune recognition improved through vaccine-like antigen guidance.", "good");
+        damage += Math.floor(game.boss.vaccineBoost * 6);
+        game.boss.cooldowns[ability.id] = 240;
+      } else if (ability.id === "precision") {
+        bossResponseText.textContent = "Precision targeting exploited a tumor weakness with focused treatment pressure.";
+        addBossLog("Precision oncology targeted a tumor vulnerability.", "good");
+        if (game.boss.phase === 1) damage += 6;
+        game.boss.cooldowns[ability.id] = 180;
+      }
+
+      game.boss.health -= damage;
+      burstBoss(480, 290, "rgba(255, 112, 146, 0.95)", 20);
+      updateBossPhase();
+      updateBossUI();
+
+      if (game.boss.health <= 0) {
+        game.boss.health = 0;
+        game.boss.completed = true;
+        bossResponseText.textContent = "Boss defeated. The tumor network collapsed after immune reactivation and targeted treatment.";
+        addBossLog("Cancer boss defeated. Immune control restored.", "good");
+        restartCampaignBtn.classList.remove("hidden");
+      }
+
+      cardEl.classList.remove("ready");
+      setTimeout(() => cardEl.classList.add("ready"), 150);
+    }
+
+    function updateBossPhase() {
+      if (game.boss.health <= 35) {
+        game.boss.phase = 3;
+      } else if (game.boss.health <= 70) {
+        game.boss.phase = 2;
+      } else {
+        game.boss.phase = 1;
+      }
+
+      if (game.boss.phase === 1) {
+        bossPhaseLabel.textContent = "Phase 1: Growth";
+        bossBriefText.textContent = "The tumor is growing and recruiting support. Targeted pressure matters, but full immune suppression is not active yet.";
+      } else if (game.boss.phase === 2) {
+        bossPhaseLabel.textContent = "Phase 2: Checkpoint Suppression";
+        bossBriefText.textContent = "The tumor is now switching off T-cells through checkpoints. Reactivating them becomes critical.";
+      } else {
+        bossPhaseLabel.textContent = "Phase 3: Mutated Defense";
+        bossBriefText.textContent = "The tumor is unstable and dangerous, but its network is also exposed. Strong combined attacks matter most now.";
+      }
+    }
+
+    function updateBossUI() {
+      bossHealthFill.style.width = Math.max(0, game.boss.health) + "%";
+      bossHealthLabel.textContent = Math.round(Math.max(0, game.boss.health)) + "%";
+      updateBossPhase();
+    }
+
+    function burstBoss(x, y, color, amount = 14) {
+      for (let i = 0; i < amount; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const speed = 1.1 + Math.random() * 3.2;
+        game.boss.particles.push({
+          x,
+          y,
+          vx: Math.cos(a) * speed,
+          vy: Math.sin(a) * speed,
+          size: 2 + Math.random() * 4,
+          life: 30 + Math.random() * 18,
+          maxLife: 44,
+          color
+        });
+      }
+    }
+
+    function updateBossArena() {
+      if (bossScreen.classList.contains("hidden")) return;
+      if (!game.boss.running) return;
+
+      game.boss.time++;
+
+      Object.keys(game.boss.cooldowns).forEach((k) => {
+        if (game.boss.cooldowns[k] > 0) game.boss.cooldowns[k]--;
+      });
+
+      bossCtx.clearRect(0, 0, bossCanvas.width, bossCanvas.height);
+
+      const bg = bossCtx.createLinearGradient(0, 0, 0, bossCanvas.height);
+      bg.addColorStop(0, "rgba(33, 10, 38, 0.98)");
+      bg.addColorStop(1, "rgba(10, 7, 20, 0.98)");
+      bossCtx.fillStyle = bg;
+      bossCtx.fillRect(0, 0, bossCanvas.width, bossCanvas.height);
+
+      bossCtx.fillStyle = "rgba(255, 85, 112, 0.08)";
+      circle(bossCtx, 480, 300, 230, true, false);
+
+      for (let i = 0; i < 5; i++) {
+        bossCtx.strokeStyle = "rgba(255, 112, 146, 0.08)";
+        bossCtx.lineWidth = 1.5;
+        circle(bossCtx, 480, 300, 90 + i * 34 + Math.sin(game.boss.time * 0.02 + i) * 4, false, true);
+      }
+
+      const tumorR = 60 + (game.boss.health / 100) * 90;
+      const pulse = Math.sin(game.boss.time * 0.08) * 5;
+
+      bossCtx.fillStyle = "rgba(255, 80, 110, 0.20)";
+      circle(bossCtx, 480, 300, tumorR + 34 + pulse, true, false);
+
+      bossCtx.fillStyle = "rgba(255, 80, 110, 0.82)";
+      circle(bossCtx, 480, 300, tumorR + pulse, true, false);
+
+      bossCtx.fillStyle = "rgba(255, 220, 230, 0.65)";
+      circle(bossCtx, 500 + Math.sin(game.boss.time * 0.07) * 6, 280 + Math.cos(game.boss.time * 0.06) * 6, tumorR * 0.34, true, false);
+
+      if (game.boss.phase >= 2) {
+        bossCtx.strokeStyle = "rgba(185, 150, 255, 0.35)";
+        bossCtx.lineWidth = 5;
+        circle(bossCtx, 480, 300, tumorR + 58, false, true);
+      }
+
+      game.boss.entities.forEach((e, idx) => {
+        e.x += Math.sin(game.boss.time * 0.02 + idx) * 0.55;
+        e.y += Math.cos(game.boss.time * 0.018 + idx) * 0.45;
+        bossCtx.fillStyle = game.boss.checkpointOpen ? "rgba(129,246,255,0.9)" : "rgba(90, 140, 255, 0.8)";
+        circle(bossCtx, e.x, e.y, e.r, true, false);
+
+        const dx = 480 - e.x;
+        const dy = 300 - e.y;
+        const d = Math.max(1, Math.hypot(dx, dy));
+        e.x += dx / d * (game.boss.checkpointOpen ? 0.55 : 0.18);
+        e.y += dy / d * (game.boss.checkpointOpen ? 0.55 : 0.18);
+      });
+
+      if (!game.boss.completed && Math.random() < 0.02 + game.boss.phase * 0.008) {
+        burstBoss(480 + (Math.random() - 0.5) * tumorR, 300 + (Math.random() - 0.5) * tumorR, "rgba(255, 140, 166, 0.9)", 8);
+      }
+
+      game.boss.particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        bossCtx.globalAlpha = Math.max(0, p.life / p.maxLife);
+        bossCtx.fillStyle = p.color;
+        circle(bossCtx, p.x, p.y, p.size, true, false);
+      });
+      bossCtx.globalAlpha = 1;
+      game.boss.particles = game.boss.particles.filter((p) => p.life > 0);
+    }
+
+    function startCampaign() {
+      chooseScenario();
+      loadScenarioInfo();
+      showScreen(scenarioScreen);
+      setStage("Stage 1: Invasion", 12, game.scenario.name);
+    }
+
+    function enterInnateStage() {
+      resetInnateStage();
+      showScreen(innateScreen);
+      setStage("Stage 2: Innate Defense", 28, game.scenario.name);
+    }
+
+    function enterAdaptiveStage() {
+      resetAdaptiveStage();
+      showScreen(adaptiveScreen);
+      setStage("Stage 3: Adaptive Response", 52, game.scenario.name);
+    }
+
+    function enterMemoryStage() {
+      resetMemoryStage();
+      showScreen(memoryScreen);
+      setStage("Stage 4: Memory", 72, game.scenario.name);
+    }
+
+    function enterBossStage() {
+      resetBossStage();
+      showScreen(bossScreen);
+      setStage("Final Stage: Cancer Boss", 88, game.scenario.name);
+    }
+
+    function restartFullCampaign() {
+      showScreen(heroScreen);
+      setStage("Loading", 0, "Uninitialized");
+      chooseScenario(true);
+    }
+
+    startCampaignBtn.addEventListener("click", startCampaign);
+    rerollBtn.addEventListener("click", () => chooseScenario(true));
+    heroInfoBtn.addEventListener("click", () => {
+      alert("Flow: randomized invasion -> innate defense arena -> adaptive sequence -> memory response -> cancer boss fight.");
+    });
+
+    continueToInnateBtn.addEventListener("click", enterInnateStage);
+    backToHeroBtn.addEventListener("click", () => {
+      showScreen(heroScreen);
+      setStage("Loading", 0, game.scenario ? game.scenario.name : "Uninitialized");
+    });
+
+    retryInnateBtn.addEventListener("click", resetInnateStage);
+    toAdaptiveBtn.addEventListener("click", enterAdaptiveStage);
+
+    retryAdaptiveBtn.addEventListener("click", resetAdaptiveStage);
+    toMemoryBtn.addEventListener("click", enterMemoryStage);
+
+    memoryBurstBtn.addEventListener("click", triggerMemoryBurst);
+    toBossBtn.addEventListener("click", enterBossStage);
+
+    retryBossBtn.addEventListener("click", resetBossStage);
+    restartCampaignBtn.addEventListener("click", restartFullCampaign);
+
+    function animate() {
+      updateInnateArena();
+      updateBossArena();
+      requestAnimationFrame(animate);
+    }
+
+    buildStars();
+    chooseScenario(true);
+    setStage("Loading", 0, "Uninitialized");
+    animate();
+  </script>
 </body>
 </html>
