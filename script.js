@@ -1,3 +1,5 @@
-document.getElementById("startBtn").addEventListener("click", function() {
-  alert("The invasion begins...");
+const startBtn = document.getElementById("startBtn");
+
+startBtn.addEventListener("click", function () {
+  alert("Simulation starting: foreign invader detected.");
 });
