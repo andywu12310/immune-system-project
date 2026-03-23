@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The War Inside</title>
-  <link rel="stylesheet" href="style.css?v=5" />
+  <link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body>
   <div class="hud">
@@ -13,16 +13,7 @@
     <div class="hud-right" id="hudProgress">Progress 0%</div>
   </div>
 
-  <div class="background-effects">
-    <span class="particle p1"></span>
-    <span class="particle p2"></span>
-    <span class="particle p3"></span>
-    <span class="particle p4"></span>
-    <span class="particle p5"></span>
-    <span class="particle p6"></span>
-    <span class="particle p7"></span>
-    <span class="particle p8"></span>
-  </div>
+  <div class="background-effects" id="backgroundEffects"></div>
 
   <section class="hero" id="hero">
     <p class="overline">Immune Defense Simulation</p>
@@ -100,10 +91,83 @@
             <p>The immune system checks whether something belongs in the body or should be attacked.</p>
           </div>
         </div>
+
+        <button class="advance-btn" id="toDefenseBtn">Continue to First Defense</button>
       </div>
     </div>
   </section>
 
-  <script src="script.js?v=5"></script>
+  <section class="stage defense-stage" id="defense">
+    <div class="defense-layout">
+      <div class="defense-left">
+        <p class="section-tag">Stage 2</p>
+        <h2>First Line of Defense</h2>
+        <p class="section-intro">
+          The invader entered through the respiratory tract. Try your body's first responses.
+          Some defenses are powerful here. Others will not help much yet.
+        </p>
+
+        <div class="status-grid">
+          <div class="status-card">
+            <p class="status-label">Threat Level</p>
+            <div class="meter">
+              <div class="meter-fill threat-fill" id="threatFill"></div>
+            </div>
+            <p class="status-value" id="threatValue">80%</p>
+          </div>
+
+          <div class="status-card">
+            <p class="status-label">Defense Progress</p>
+            <div class="meter">
+              <div class="meter-fill defense-fill" id="defenseFill"></div>
+            </div>
+            <p class="status-value" id="defenseValue">10%</p>
+          </div>
+        </div>
+
+        <div class="mission-card">
+          <p class="card-label">Mission Brief</p>
+          <h3>Respiratory entry detected</h3>
+          <p>
+            The pathogen slipped past the outside world and entered through the nose or mouth.
+            Choose actions that make sense for this type of entry and this early stage of immunity.
+          </p>
+        </div>
+
+        <div class="action-grid">
+          <button class="action-btn" data-action="mucus">Mucus Trap</button>
+          <button class="action-btn" data-action="stomach-acid">Stomach Acid</button>
+          <button class="action-btn" data-action="skin">Skin Barrier</button>
+          <button class="action-btn" data-action="phagocytes">Send Phagocytes</button>
+          <button class="action-btn" data-action="fever">Trigger Fever</button>
+          <button class="action-btn" data-action="antibodies">Deploy Antibodies</button>
+        </div>
+      </div>
+
+      <div class="defense-right">
+        <div class="response-panel" id="responsePanel">
+          <p class="card-label">System Response</p>
+          <h3>Choose your first action</h3>
+          <p>
+            Click an action to test how the immune system responds. Some actions are correct,
+            some are weak, and some are too early for this stage.
+          </p>
+        </div>
+
+        <div class="log-panel">
+          <p class="card-label">Action Log</p>
+          <div class="log-list" id="logList">
+            <p class="log-entry">Simulation ready. Awaiting first defense action.</p>
+          </div>
+        </div>
+
+        <button class="advance-btn disabled" id="unlockAdaptiveBtn" disabled>
+          Adaptive System Locked
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <script src="script.js?v=6"></script>
 </body>
 </html>
