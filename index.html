@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The War Inside</title>
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=7" />
 </head>
 <body>
   <div class="hud">
@@ -142,6 +142,13 @@
           <button class="action-btn" data-action="fever">Trigger Fever</button>
           <button class="action-btn" data-action="antibodies">Deploy Antibodies</button>
         </div>
+
+        <div class="control-row">
+          <button class="secondary-btn" id="retryDefenseBtn">Retry Stage 2</button>
+          <button class="advance-btn disabled" id="unlockAdaptiveBtn" disabled>
+            Adaptive System Locked
+          </button>
+        </div>
       </div>
 
       <div class="defense-right">
@@ -160,14 +167,78 @@
             <p class="log-entry">Simulation ready. Awaiting first defense action.</p>
           </div>
         </div>
-
-        <button class="advance-btn disabled" id="unlockAdaptiveBtn" disabled>
-          Adaptive System Locked
-        </button>
       </div>
     </div>
   </section>
 
-  <script src="script.js?v=6"></script>
+  <section class="stage adaptive-stage" id="adaptive">
+    <div class="adaptive-layout">
+      <div class="adaptive-left">
+        <p class="section-tag">Stage 3</p>
+        <h2>Adaptive Response</h2>
+        <p class="section-intro">
+          The innate system bought time, but now the body needs precision. Build the correct
+          adaptive immune sequence to target this invader.
+        </p>
+
+        <div class="mission-card">
+          <p class="card-label">Mission Brief</p>
+          <h3>Specific targeting required</h3>
+          <p>
+            Adaptive immunity works best in the right order. Start with threat presentation,
+            then activate the cells that coordinate and carry out the specialized response.
+          </p>
+        </div>
+
+        <div class="status-grid">
+          <div class="status-card">
+            <p class="status-label">Sequence Progress</p>
+            <div class="meter">
+              <div class="meter-fill defense-fill" id="adaptiveFill"></div>
+            </div>
+            <p class="status-value" id="adaptiveValue">0%</p>
+          </div>
+
+          <div class="status-card">
+            <p class="status-label">Correct Steps</p>
+            <p class="big-value" id="adaptiveSteps">0 / 4</p>
+          </div>
+        </div>
+
+        <div class="action-grid adaptive-grid">
+          <button class="adaptive-btn" data-step="dendritic">Activate Dendritic Cell</button>
+          <button class="adaptive-btn" data-step="helper">Call Helper T-Cells</button>
+          <button class="adaptive-btn" data-step="cytotoxic">Deploy Cytotoxic T-Cells</button>
+          <button class="adaptive-btn" data-step="bcell">Activate B-Cells</button>
+          <button class="adaptive-btn" data-step="antibodies-now">Release Antibodies Immediately</button>
+          <button class="adaptive-btn" data-step="memory">Store Memory Cells</button>
+        </div>
+
+        <div class="control-row">
+          <button class="secondary-btn" id="retryAdaptiveBtn">Retry Stage 3</button>
+        </div>
+      </div>
+
+      <div class="adaptive-right">
+        <div class="response-panel" id="adaptiveResponsePanel">
+          <p class="card-label">Adaptive Response</p>
+          <h3>Build the correct sequence</h3>
+          <p>
+            The best path begins with antigen presentation. Then helper T-cells coordinate the
+            response, followed by specialized attack and antibody production.
+          </p>
+        </div>
+
+        <div class="log-panel">
+          <p class="card-label">Sequence Log</p>
+          <div class="log-list" id="adaptiveLogList">
+            <p class="log-entry">Adaptive system waiting for activation.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="script.js?v=7"></script>
 </body>
 </html>

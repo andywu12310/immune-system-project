@@ -4,6 +4,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 90px;
 }
 
 body {
@@ -147,13 +148,26 @@ button:hover {
   filter: brightness(1.05);
 }
 
+.secondary-btn {
+  background: rgba(135, 170, 255, 0.08);
+  border: 1px solid rgba(140, 180, 255, 0.2);
+  box-shadow: none;
+}
+
+.secondary-btn:hover {
+  background: linear-gradient(135deg, #2047ff, #4e7dff);
+  box-shadow: 0 0 24px rgba(78, 125, 255, 0.28);
+}
+
 .stage {
   min-height: 100vh;
   padding: 120px 32px 60px;
 }
 
-.stage-grid {
-  max-width: 1250px;
+.stage-grid,
+.defense-layout,
+.adaptive-layout {
+  max-width: 1280px;
   margin: 0 auto;
   min-height: calc(100vh - 180px);
   display: grid;
@@ -193,6 +207,15 @@ button:hover {
   justify-content: center;
 }
 
+.defense-left,
+.defense-right,
+.adaptive-left,
+.adaptive-right {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .threat-core {
   position: relative;
   width: 320px;
@@ -210,22 +233,9 @@ button:hover {
   animation: pulseRing 4s ease-in-out infinite;
 }
 
-.ring-1 {
-  width: 260px;
-  height: 260px;
-}
-
-.ring-2 {
-  width: 320px;
-  height: 320px;
-  animation-delay: 1s;
-}
-
-.ring-3 {
-  width: 380px;
-  height: 380px;
-  animation-delay: 2s;
-}
+.ring-1 { width: 260px; height: 260px; }
+.ring-2 { width: 320px; height: 320px; animation-delay: 1s; }
+.ring-3 { width: 380px; height: 380px; animation-delay: 2s; }
 
 @keyframes pulseRing {
   0%, 100% {
@@ -243,21 +253,14 @@ button:hover {
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 30%, #ff8f8f, #ff4c61 45%, #8f1028 100%);
-  box-shadow:
-    0 0 28px rgba(255, 90, 120, 0.4),
-    0 0 80px rgba(255, 90, 120, 0.16);
+  background: radial-gradient(circle at 30% 30%, #ff8f8f, #ff4c61 45%, #8f1028 100%);
+  box-shadow: 0 0 28px rgba(255, 90, 120, 0.4), 0 0 80px rgba(255, 90, 120, 0.16);
   animation: threatFloat 5s ease-in-out infinite;
 }
 
 @keyframes threatFloat {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
 .spike {
@@ -299,28 +302,9 @@ button:hover {
   text-transform: uppercase;
 }
 
-.warning-card h3,
-.info-display h3,
 .info-panel h2,
-.concept-card h4,
 .defense-left h2,
-.response-panel h3,
-.mission-card h3 {
-  margin-top: 0;
-}
-
-.warning-lines p {
-  margin: 10px 0;
-  color: #d5def8;
-}
-
-.warning-lines span {
-  color: #ffffff;
-  font-weight: 700;
-}
-
-.info-panel h2,
-.defense-left h2 {
+.adaptive-left h2 {
   font-size: clamp(36px, 5vw, 58px);
   line-height: 1.02;
   margin-bottom: 16px;
@@ -334,7 +318,8 @@ button:hover {
   max-width: 620px;
 }
 
-.choice-row {
+.choice-row,
+.control-row {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
@@ -342,7 +327,8 @@ button:hover {
 }
 
 .info-btn,
-.action-btn {
+.action-btn,
+.adaptive-btn {
   padding: 12px 20px;
   border-radius: 999px;
   background: rgba(135, 170, 255, 0.08);
@@ -352,7 +338,8 @@ button:hover {
 
 .info-btn.active,
 .info-btn:hover,
-.action-btn:hover {
+.action-btn:hover,
+.adaptive-btn:hover {
   background: linear-gradient(135deg, #2047ff, #4e7dff);
   box-shadow: 0 0 24px rgba(78, 125, 255, 0.28);
 }
@@ -382,22 +369,21 @@ button:hover {
   font-size: 15px;
 }
 
-.concept-strip {
+.concept-strip,
+.status-grid,
+.action-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
-.concept-card {
-  padding: 20px;
+.concept-card,
+.status-card,
+.mission-card,
+.response-panel,
+.log-panel {
+  padding: 22px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(140, 180, 255, 0.12);
-}
-
-.advance-btn {
-  margin-top: 26px;
-  align-self: flex-start;
 }
 
 .advance-btn.disabled {
@@ -405,39 +391,16 @@ button:hover {
   cursor: not-allowed;
 }
 
-.defense-layout {
-  max-width: 1280px;
-  margin: 0 auto;
-  min-height: calc(100vh - 180px);
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 28px;
-  align-items: start;
-}
-
-.defense-left,
-.defense-right {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.status-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.status-card,
-.mission-card,
-.response-panel,
-.log-panel {
-  padding: 22px;
-}
-
 .status-value {
   margin: 12px 0 0;
   color: #d9e5ff;
+  font-weight: 700;
+}
+
+.big-value {
+  margin: 10px 0 0;
+  color: #d9e5ff;
+  font-size: 28px;
   font-weight: 700;
 }
 
@@ -463,12 +426,6 @@ button:hover {
 .defense-fill {
   width: 10%;
   background: linear-gradient(90deg, #57d1ff, #79f2b4);
-}
-
-.action-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
 }
 
 .response-panel {
@@ -506,15 +463,8 @@ button:hover {
 
 @media (max-width: 1080px) {
   .stage-grid,
-  .defense-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .visual-panel,
-  .info-panel {
-    min-height: auto;
-  }
-
+  .defense-layout,
+  .adaptive-layout,
   .concept-strip,
   .status-grid,
   .action-grid {
@@ -552,18 +502,15 @@ button:hover {
   .status-card,
   .mission-card,
   .response-panel,
-  .log-panel {
+  .log-panel,
+  .concept-card {
     padding: 20px;
     border-radius: 22px;
   }
 
-  .choice-row,
-  .action-grid {
-    gap: 10px;
-  }
-
   .info-btn,
-  .action-btn {
+  .action-btn,
+  .adaptive-btn {
     width: 100%;
   }
 }
