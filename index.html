@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The War Inside</title>
-  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=5" />
 </head>
 <body>
   <div class="hud">
     <div class="hud-left">The War Inside</div>
-    <div class="hud-center">Stage 0: Loading</div>
-    <div class="hud-right">Progress 0%</div>
+    <div class="hud-center" id="hudStage">Stage 0: Loading</div>
+    <div class="hud-right" id="hudProgress">Progress 0%</div>
   </div>
 
   <div class="background-effects">
@@ -24,8 +24,8 @@
     <span class="particle p8"></span>
   </div>
 
-  <section class="hero">
-    <p class="overline">IMMUNE DEFENSE SIMULATION</p>
+  <section class="hero" id="hero">
+    <p class="overline">Immune Defense Simulation</p>
     <h1>The War Inside</h1>
     <p class="hero-subtext">
       Enter the hidden battlefield inside the human body and explore how immune cells detect,
@@ -34,6 +34,76 @@
     <button id="startBtn">Begin the Battle</button>
   </section>
 
-  <script src="script.js?v=4"></script>
+  <section class="stage invasion-stage" id="invasion">
+    <div class="stage-grid">
+      <div class="visual-panel">
+        <div class="threat-core">
+          <div class="threat-ring ring-1"></div>
+          <div class="threat-ring ring-2"></div>
+          <div class="threat-ring ring-3"></div>
+          <div class="threat-body">
+            <span class="spike s1"></span>
+            <span class="spike s2"></span>
+            <span class="spike s3"></span>
+            <span class="spike s4"></span>
+            <span class="spike s5"></span>
+            <span class="spike s6"></span>
+            <span class="spike s7"></span>
+            <span class="spike s8"></span>
+          </div>
+        </div>
+
+        <div class="warning-card">
+          <p class="card-label">Threat Scan</p>
+          <h3>Foreign body detected</h3>
+          <div class="warning-lines">
+            <p><span>Status:</span> Active entry</p>
+            <p><span>Type:</span> Unknown pathogen</p>
+            <p><span>Response:</span> Immune scan initiated</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-panel">
+        <p class="section-tag">Stage 1</p>
+        <h2>The Invasion Begins</h2>
+        <p class="section-intro">
+          A pathogen has entered the body. The immune system now has one main job:
+          detect what does not belong and prepare a defense.
+        </p>
+
+        <div class="choice-row">
+          <button class="info-btn active" data-topic="virus">Virus</button>
+          <button class="info-btn" data-topic="bacteria">Bacteria</button>
+          <button class="info-btn" data-topic="antigen">Antigen</button>
+        </div>
+
+        <div class="info-display" id="infoDisplay">
+          <h3>Virus</h3>
+          <p>
+            A virus is a tiny infectious agent that enters living cells and uses them to make
+            more copies of itself. Because viruses hide inside your own cells, they can be hard
+            for the body to stop.
+          </p>
+          <p class="mini-note">
+            Immune focus: infected cells and viral markers must be identified quickly.
+          </p>
+        </div>
+
+        <div class="concept-strip">
+          <div class="concept-card">
+            <h4>Pathogen</h4>
+            <p>A disease-causing invader such as a virus, bacterium, fungus, or parasite.</p>
+          </div>
+          <div class="concept-card">
+            <h4>Self vs Non-self</h4>
+            <p>The immune system checks whether something belongs in the body or should be attacked.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="script.js?v=5"></script>
 </body>
 </html>
