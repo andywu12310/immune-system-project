@@ -3,242 +3,99 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The War Inside</title>
-  <link rel="stylesheet" href="style.css?v=7" />
+  <title>Immune Defense Simulator</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="hud">
-    <div class="hud-left">The War Inside</div>
-    <div class="hud-center" id="hudStage">Stage 0: Loading</div>
-    <div class="hud-right" id="hudProgress">Progress 0%</div>
+  <div id="app">
+    <div class="topbar">
+      <div class="title-wrap">
+        <h1>Immune Defense Simulator</h1>
+        <p>Defend the body through barriers, innate immunity, and adaptive immunity.</p>
+      </div>
+
+      <div class="hud">
+        <div class="hud-card">
+          <div class="hud-label">Scenario</div>
+          <div class="hud-value" id="hudScenario">—</div>
+        </div>
+        <div class="hud-card">
+          <div class="hud-label">Phase</div>
+          <div class="hud-value" id="hudPhase">Start</div>
+        </div>
+        <div class="hud-card">
+          <div class="hud-label">Health</div>
+          <div class="hud-value" id="hudHealth">100</div>
+        </div>
+        <div class="hud-card">
+          <div class="hud-label">Score</div>
+          <div class="hud-value" id="hudScore">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="stage-wrap">
+        <canvas id="gameCanvas" width="860" height="640"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="card">
+          <h2 id="panelTitle">Welcome, Defender</h2>
+          <p id="panelText" class="muted">
+            Start a random infection or choose a specific body entry point. Each run changes the first line of defense and how the immune system should respond.
+          </p>
+          <div class="button-row" id="primaryButtons">
+            <button id="btnRandom">Start Random Infection</button>
+            <button class="secondary" id="btnChoose">Choose Scenario</button>
+            <button class="dark" id="btnRestart" style="display:none;">Restart</button>
+          </div>
+        </div>
+
+        <div class="card" id="choiceContainer" style="display:none;">
+          <h3>Choose an infection start</h3>
+          <div class="choices" id="choices"></div>
+        </div>
+
+        <div class="card">
+          <h3>Controls</h3>
+          <div id="controlsText" class="muted">
+            Mouse to interact. In the phagocyte phase, move the cursor to guide the macrophage.
+          </div>
+          <div class="button-row" id="contextButtons"></div>
+        </div>
+
+        <div class="card">
+          <h3>Legend</h3>
+          <div class="legend">
+            <div class="legend-item"><span class="dot red-dot"></span>Pathogens</div>
+            <div class="legend-item"><span class="dot cyan-dot"></span>Immune cells</div>
+            <div class="legend-item"><span class="dot yellow-dot"></span>Barrier actions</div>
+            <div class="legend-item"><span class="dot green-dot"></span>Antibody match</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>What this version teaches</h3>
+          <div>
+            <span class="pill">Skin barrier</span>
+            <span class="pill">Mucus + cilia</span>
+            <span class="pill">Stomach acid</span>
+            <span class="pill">Inflammation</span>
+            <span class="pill">Phagocytes</span>
+            <span class="pill">B cells</span>
+            <span class="pill">Antibodies</span>
+            <span class="pill">Memory cells</span>
+          </div>
+        </div>
+
+        <div class="footer-note">
+          This version is split into three files so it is much easier to edit and improve.
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="background-effects" id="backgroundEffects"></div>
-
-  <section class="hero" id="hero">
-    <p class="overline">Immune Defense Simulation</p>
-    <h1>The War Inside</h1>
-    <p class="hero-subtext">
-      Enter the hidden battlefield inside the human body and explore how immune cells detect,
-      respond to, and remember biological threats.
-    </p>
-    <button id="startBtn">Begin the Battle</button>
-  </section>
-
-  <section class="stage invasion-stage" id="invasion">
-    <div class="stage-grid">
-      <div class="visual-panel">
-        <div class="threat-core">
-          <div class="threat-ring ring-1"></div>
-          <div class="threat-ring ring-2"></div>
-          <div class="threat-ring ring-3"></div>
-          <div class="threat-body">
-            <span class="spike s1"></span>
-            <span class="spike s2"></span>
-            <span class="spike s3"></span>
-            <span class="spike s4"></span>
-            <span class="spike s5"></span>
-            <span class="spike s6"></span>
-            <span class="spike s7"></span>
-            <span class="spike s8"></span>
-          </div>
-        </div>
-
-        <div class="warning-card">
-          <p class="card-label">Threat Scan</p>
-          <h3>Foreign body detected</h3>
-          <div class="warning-lines">
-            <p><span>Status:</span> Active entry</p>
-            <p><span>Type:</span> Unknown pathogen</p>
-            <p><span>Response:</span> Immune scan initiated</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="info-panel">
-        <p class="section-tag">Stage 1</p>
-        <h2>The Invasion Begins</h2>
-        <p class="section-intro">
-          A pathogen has entered the body. The immune system now has one main job:
-          detect what does not belong and prepare a defense.
-        </p>
-
-        <div class="choice-row">
-          <button class="info-btn active" data-topic="virus">Virus</button>
-          <button class="info-btn" data-topic="bacteria">Bacteria</button>
-          <button class="info-btn" data-topic="antigen">Antigen</button>
-        </div>
-
-        <div class="info-display" id="infoDisplay">
-          <h3>Virus</h3>
-          <p>
-            A virus is a tiny infectious agent that enters living cells and uses them to make
-            more copies of itself. Because viruses hide inside your own cells, they can be hard
-            for the body to stop.
-          </p>
-          <p class="mini-note">
-            Immune focus: infected cells and viral markers must be identified quickly.
-          </p>
-        </div>
-
-        <div class="concept-strip">
-          <div class="concept-card">
-            <h4>Pathogen</h4>
-            <p>A disease-causing invader such as a virus, bacterium, fungus, or parasite.</p>
-          </div>
-          <div class="concept-card">
-            <h4>Self vs Non-self</h4>
-            <p>The immune system checks whether something belongs in the body or should be attacked.</p>
-          </div>
-        </div>
-
-        <button class="advance-btn" id="toDefenseBtn">Continue to First Defense</button>
-      </div>
-    </div>
-  </section>
-
-  <section class="stage defense-stage" id="defense">
-    <div class="defense-layout">
-      <div class="defense-left">
-        <p class="section-tag">Stage 2</p>
-        <h2>First Line of Defense</h2>
-        <p class="section-intro">
-          The invader entered through the respiratory tract. Try your body's first responses.
-          Some defenses are powerful here. Others will not help much yet.
-        </p>
-
-        <div class="status-grid">
-          <div class="status-card">
-            <p class="status-label">Threat Level</p>
-            <div class="meter">
-              <div class="meter-fill threat-fill" id="threatFill"></div>
-            </div>
-            <p class="status-value" id="threatValue">80%</p>
-          </div>
-
-          <div class="status-card">
-            <p class="status-label">Defense Progress</p>
-            <div class="meter">
-              <div class="meter-fill defense-fill" id="defenseFill"></div>
-            </div>
-            <p class="status-value" id="defenseValue">10%</p>
-          </div>
-        </div>
-
-        <div class="mission-card">
-          <p class="card-label">Mission Brief</p>
-          <h3>Respiratory entry detected</h3>
-          <p>
-            The pathogen slipped past the outside world and entered through the nose or mouth.
-            Choose actions that make sense for this type of entry and this early stage of immunity.
-          </p>
-        </div>
-
-        <div class="action-grid">
-          <button class="action-btn" data-action="mucus">Mucus Trap</button>
-          <button class="action-btn" data-action="stomach-acid">Stomach Acid</button>
-          <button class="action-btn" data-action="skin">Skin Barrier</button>
-          <button class="action-btn" data-action="phagocytes">Send Phagocytes</button>
-          <button class="action-btn" data-action="fever">Trigger Fever</button>
-          <button class="action-btn" data-action="antibodies">Deploy Antibodies</button>
-        </div>
-
-        <div class="control-row">
-          <button class="secondary-btn" id="retryDefenseBtn">Retry Stage 2</button>
-          <button class="advance-btn disabled" id="unlockAdaptiveBtn" disabled>
-            Adaptive System Locked
-          </button>
-        </div>
-      </div>
-
-      <div class="defense-right">
-        <div class="response-panel" id="responsePanel">
-          <p class="card-label">System Response</p>
-          <h3>Choose your first action</h3>
-          <p>
-            Click an action to test how the immune system responds. Some actions are correct,
-            some are weak, and some are too early for this stage.
-          </p>
-        </div>
-
-        <div class="log-panel">
-          <p class="card-label">Action Log</p>
-          <div class="log-list" id="logList">
-            <p class="log-entry">Simulation ready. Awaiting first defense action.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="stage adaptive-stage" id="adaptive">
-    <div class="adaptive-layout">
-      <div class="adaptive-left">
-        <p class="section-tag">Stage 3</p>
-        <h2>Adaptive Response</h2>
-        <p class="section-intro">
-          The innate system bought time, but now the body needs precision. Build the correct
-          adaptive immune sequence to target this invader.
-        </p>
-
-        <div class="mission-card">
-          <p class="card-label">Mission Brief</p>
-          <h3>Specific targeting required</h3>
-          <p>
-            Adaptive immunity works best in the right order. Start with threat presentation,
-            then activate the cells that coordinate and carry out the specialized response.
-          </p>
-        </div>
-
-        <div class="status-grid">
-          <div class="status-card">
-            <p class="status-label">Sequence Progress</p>
-            <div class="meter">
-              <div class="meter-fill defense-fill" id="adaptiveFill"></div>
-            </div>
-            <p class="status-value" id="adaptiveValue">0%</p>
-          </div>
-
-          <div class="status-card">
-            <p class="status-label">Correct Steps</p>
-            <p class="big-value" id="adaptiveSteps">0 / 4</p>
-          </div>
-        </div>
-
-        <div class="action-grid adaptive-grid">
-          <button class="adaptive-btn" data-step="dendritic">Activate Dendritic Cell</button>
-          <button class="adaptive-btn" data-step="helper">Call Helper T-Cells</button>
-          <button class="adaptive-btn" data-step="cytotoxic">Deploy Cytotoxic T-Cells</button>
-          <button class="adaptive-btn" data-step="bcell">Activate B-Cells</button>
-          <button class="adaptive-btn" data-step="antibodies-now">Release Antibodies Immediately</button>
-          <button class="adaptive-btn" data-step="memory">Store Memory Cells</button>
-        </div>
-
-        <div class="control-row">
-          <button class="secondary-btn" id="retryAdaptiveBtn">Retry Stage 3</button>
-        </div>
-      </div>
-
-      <div class="adaptive-right">
-        <div class="response-panel" id="adaptiveResponsePanel">
-          <p class="card-label">Adaptive Response</p>
-          <h3>Build the correct sequence</h3>
-          <p>
-            The best path begins with antigen presentation. Then helper T-cells coordinate the
-            response, followed by specialized attack and antibody production.
-          </p>
-        </div>
-
-        <div class="log-panel">
-          <p class="card-label">Sequence Log</p>
-          <div class="log-list" id="adaptiveLogList">
-            <p class="log-entry">Adaptive system waiting for activation.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <script src="script.js?v=7"></script>
+  <script src="script.js"></script>
 </body>
 </html>
