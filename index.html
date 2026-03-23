@@ -78,8 +78,9 @@ h2{font-family:var(--font-display);font-size:clamp(22px,3.5vw,36px);font-weight:
 .row{display:flex;gap:10px;flex-wrap:wrap;}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
-/* ── HERO ── */
-#heroScreen{display:flex;align-items:center;justify-content:center;text-align:center;padding:40px 20px;position:relative;overflow:hidden;}
+/* ── HERO (fixed overlay, not in document flow) ── */
+#heroScreen{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;text-align:center;padding:40px 20px;overflow:hidden;background:var(--bg);}
+#heroScreen.active{display:flex;}
 #heroScreen .hero-bg{position:absolute;inset:0;z-index:0;}
 #heroScreen .hero-content{position:relative;z-index:2;max-width:800px;}
 #heroScreen h1{font-family:var(--font-display);font-size:clamp(52px,9vw,110px);font-weight:900;line-height:.92;letter-spacing:3px;
@@ -100,7 +101,7 @@ h2{font-family:var(--font-display);font-size:clamp(22px,3.5vw,36px);font-weight:
 .tooltip strong{color:var(--text);}
 
 /* ── INTRO CINEMATIC ── */
-.cinematic-overlay{position:fixed;inset:0;z-index:500;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .6s;}
+.cinematic-overlay{position:fixed;inset:0;z-index:500;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .15s;}
 .cinematic-overlay.active{opacity:1;pointer-events:auto;}
 .cinematic-text{font-family:var(--font-display);font-size:clamp(16px,3vw,28px);text-align:center;max-width:700px;line-height:1.6;color:var(--dim);opacity:0;transform:translateY(20px);transition:opacity .8s,transform .8s;}
 .cinematic-text.show{opacity:1;transform:translateY(0);}
@@ -168,10 +169,8 @@ h2{font-family:var(--font-display);font-size:clamp(22px,3.5vw,36px);font-weight:
 <!-- Tooltip -->
 <div class="tooltip" id="tooltip"></div>
 
-<div class="shell">
-
-<!-- ═══════ HERO (only accessible via Home button) ═══════ -->
-<div class="screen" id="heroScreen">
+<!-- ═══════ HERO (fixed overlay, outside document flow) ═══════ -->
+<div id="heroScreen">
   <div class="hero-bg">
     <div class="hero-rings"><div class="ring"></div><div class="ring"></div><div class="ring"></div></div>
   </div>
@@ -185,6 +184,8 @@ h2{font-family:var(--font-display);font-size:clamp(22px,3.5vw,36px);font-weight:
     </div>
   </div>
 </div>
+
+<div class="shell">
 
 <!-- ═══════ SCENARIO BRIEFING ═══════ -->
 <div class="screen" id="scenarioScreen">
@@ -361,16 +362,18 @@ h2{font-family:var(--font-display);font-size:clamp(22px,3.5vw,36px);font-weight:
 // ═══════════════════════════════════════════════════════════
 
 const $ = id => document.getElementById(id);
-const screens = ['heroScreen','scenarioScreen','innateScreen','adaptiveScreen','memoryScreen','bossScreen','victoryScreen'];
+const gameScreens = ['scenarioScreen','innateScreen','adaptiveScreen','memoryScreen','bossScreen','victoryScreen'];
 
 function showScreen(id){
-  screens.forEach(s=>{
-    const el=$(s);
-    el.classList.toggle('active',s===id);
+  // Hero is a fixed overlay, handled separately
+  $('heroScreen').classList.toggle('active', id==='heroScreen');
+  // Game screens are in normal flow
+  gameScreens.forEach(s=>{
+    $(s).classList.toggle('active', s===id);
   });
-  // Show home button only when NOT on hero screen
-  $('hudHomeBtn').style.display=(id==='heroScreen')?'none':'flex';
-  window.scrollTo({top:0,behavior:'instant'});
+  // Show home button only during gameplay (not on hero, not when blank)
+  $('hudHomeBtn').style.display=(id==='heroScreen'||id==='')?'none':'flex';
+  if(id!=='heroScreen' && id!=='') window.scrollTo({top:0,behavior:'instant'});
 }
 
 // Home button — returns to title, resets campaign
@@ -560,7 +563,9 @@ function updateHUD(stage,scenario){
 $('btnStart').onclick=async()=>{
   G.scenario=pick(SCENARIOS);
   G.hp=100;G.score=0;
-  showScreen('');// hide all screens during cinematic
+  // Immediately hide the hero screen so it's not visible during cinematic fade-in
+  $('heroScreen').classList.remove('active');
+  $('hudHomeBtn').style.display='flex';
   updateHUD('Cinematic',G.scenario.name);
   await playCinematic([
     'Every day, your body fights a war you never see.',
